@@ -1,0 +1,12 @@
+com\escola\dao\AvaliacaoDAO.class
+com\escola\controller\AdminLoginServlet.class
+com\escola\util\PasswordUtil.class
+com\escola\model\Avaliacao.class
+com\escola\dao\AlunoDAO.class
+com\escola\model\Aluno.class
+com\escola\dao\AdminDAO.class
+com\escola\util\DatabaseUtil.class
+com\escola\controller\LoginServlet.class
+com\escola\controller\SalvarAvaliacaoServlet.class
+com\escola\model\Admin.class
+com\escola\controller\LogoutAdminServlet.class
