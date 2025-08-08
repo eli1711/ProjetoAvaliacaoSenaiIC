@@ -1,42 +1,39 @@
-CREATE DATABASE IF NOT EXISTS escola_db;
+-- Criar banco de dados
+CREATE DATABASE IF NOT EXISTS PesquisaSenai;
 
-USE escola_db;
+-- Selecionar o banco de dados
+USE PesquisaSenai;
 
--- Tabela de administradores
-CREATE TABLE IF NOT EXISTS administradores (
+-- Criar tabela 'Aluno'
+CREATE TABLE IF NOT EXISTS Aluno (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
+    nome VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    turma VARCHAR(255) NOT NULL,
+    matricula VARCHAR(255) NOT NULL UNIQUE
+);
+
+-- Criar tabela 'Usuario'
+CREATE TABLE IF NOT EXISTS Usuario (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
-    senha_hash VARCHAR(255) NOT NULL,
-    cargo VARCHAR(50) NOT NULL,
-    data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    senha VARCHAR(255) NOT NULL,
+    cargo VARCHAR(255) NOT NULL
 );
 
--- Tabela de alunos
-CREATE TABLE IF NOT EXISTS alunos (
+-- Criar tabela 'Pesquisa' para armazenar as respostas da pesquisa
+CREATE TABLE IF NOT EXISTS Pesquisa (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    senha_hash VARCHAR(255) NOT NULL,
-    matricula VARCHAR(20) NOT NULL UNIQUE,
-    data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
--- Senha: admin123 (hash BCrypt)
-INSERT INTO administradores (nome, email, senha_hash, cargo, telefone)
-VALUES (
-    'Administrador Principal',
-    'admin@escola.com',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMy.Mrq5XkYI1Jq3JY1VzR3Jf6QYQ5JZ5W',
-    'Diretor',
-    '(11) 99999-9999'
-);
-
-CREATE TABLE avaliacoes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    aluno_id INT,
-    satisfacao INT,
-    satisfacao_infra INT,
-    comentario TEXT,
-    data_avaliacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (aluno_id) REFERENCES alunos(id)
+    aluno_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    resposta_1 INT, -- Resposta numérica (1 a 5)
+    resposta_2 INT, -- Resposta numérica (1 a 5)
+    resposta_3 INT, -- Resposta numérica (1 a 5)
+    resposta_4 INT, -- Resposta numérica (1 a 5)
+    resposta_5 INT, -- Resposta numérica (1 a 5)
+    resposta_6 TEXT, -- Resposta textual
+    resposta_7 TEXT, -- Resposta textual
+    FOREIGN KEY (aluno_id) REFERENCES Aluno(id),
+    FOREIGN KEY (usuario_id) REFERENCES Usuario(id)
 );

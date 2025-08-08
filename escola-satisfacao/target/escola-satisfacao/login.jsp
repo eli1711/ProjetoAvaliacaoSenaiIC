@@ -1,90 +1,63 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="https://jakarta.ee/tags/jstl/core" %>
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Avaliação - Login</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .login-container {
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            width: 350px;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-        }
-        .login-form {
-            margin-bottom: 20px;
-        }
-        input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-        .btn-aluno {
-            background-color: #4CAF50;
-            color: white;
-        }
-        .btn-aluno:hover {
-            background-color: #45a049;
-        }
-        .btn-admin {
-            background-color: #2196F3;
-            color: white;
-        }
-        .btn-admin:hover {
-            background-color: #0b7dda;
-        }
-        .error {
-            color: #f44336;
-            margin-top: 10px;
-        }
-    </style>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/login.css">
 </head>
 <body>
-    <div class="login-container">
-        <h1>Sistema de Avaliação</h1>
-        
-        <form id="loginForm" class="login-form" action="login" method="post">
-            <input type="email" name="email" placeholder="E-mail" required>
-            <input type="password" name="senha" placeholder="Senha" required>
+    <main class="login-container">
+        <header class="login-header">
+            <h1 class="login-title">Sistema de Avaliação</h1>
+            <img src="${pageContext.request.contextPath}/resources/images/logo.png" alt="Logo da Escola" class="login-logo">
+        </header>
+
+        <form action="${pageContext.request.contextPath}/login" method="post" class="login-form" id="loginForm">
+            <div class="form-group">
+                <label for="tipoUsuario" class="form-label">Tipo de Usuário</label>
+                <select name="tipoUsuario" id="tipoUsuario" class="form-select" required>
+                    <option value="" disabled selected>Selecione seu perfil</option>
+                    <option value="aluno">Aluno</option>
+                    <option value="admin">Administrador</option>
+                </select>
+            </div>
             
-            <button type="submit" class="btn-aluno">Sou Aluno</button>
+            <div class="form-group">
+                <label for="email" class="form-label">E-mail</label>
+                <input type="email" id="email" name="email" class="form-input" required 
+                       placeholder="Digite seu e-mail institucional">
+            </div>
+            
+            <div class="form-group">
+                <label for="senha" class="form-label">Senha</label>
+                <div class="password-container">
+                    <input type="password" id="senha" name="senha" class="form-input" required
+                           placeholder="Digite sua senha" minlength="6">
+                    <button type="button" class="toggle-password" aria-label="Mostrar senha">
+                        <i class="eye-icon"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-submit">Acessar Sistema</button>
+            
+            <div class="login-links">
+                <a href="${pageContext.request.contextPath}/recuperar-senha" class="forgot-password">Esqueci minha senha</a>
+                <a href="${pageContext.request.contextPath}/cadastro" class="register-link">Não tem conta? Cadastre-se</a>
+            </div>
         </form>
-        
-        <form action="adminLogin.jsp" method="get">
-            <button type="submit" class="btn-admin">Acesso Administrativo</button>
-        </form>
-        
-        <% if (request.getAttribute("error") != null) { %>
-            <div class="error"><%= request.getAttribute("error") %></div>
-        <% } %>
-    </div>
+
+        <c:if test="${not empty error}">
+            <div class="alert alert-error" role="alert">
+                <i class="alert-icon"></i>
+                ${error}
+            </div>
+        </c:if>
+    </main>
+
+    <script src="${pageContext.request.contextPath}/resources/js/login.js"></script>
 </body>
 </html>

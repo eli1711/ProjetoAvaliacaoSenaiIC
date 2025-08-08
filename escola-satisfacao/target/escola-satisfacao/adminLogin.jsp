@@ -10,7 +10,8 @@
     <div class="login-container">
         <h1>Acesso Administrativo</h1>
         
-        <form class="login-form" action="adminLogin" method="post">
+       <!-- Certifique-se que o action está correto -->
+<form action="${pageContext.request.contextPath}/adminLogin" method="POST">
             <input type="email" name="email" placeholder="E-mail" required>
             <input type="password" name="senha" placeholder="Senha" required>
             

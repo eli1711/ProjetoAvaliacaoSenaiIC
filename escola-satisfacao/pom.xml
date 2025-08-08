@@ -14,11 +14,17 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <junit.version>5.8.2</junit.version>
-        <tomcat.plugin.version>2.2</tomcat.plugin.version>
-        <jackson.version>2.13.3</jackson.version>
-        <slf4j.version>1.7.36</slf4j.version>
-        <logback.version>1.2.11</logback.version>
+        <junit.version>5.10.0</junit.version>
+        <tomcat.version>11.0.0-M11</tomcat.version>
+        <jackson.version>2.15.2</jackson.version>
+        <slf4j.version>2.0.7</slf4j.version>
+        <logback.version>1.4.11</logback.version>
+        <jstl.version>3.0.0</jstl.version>
+        <servlet.api.version>6.0.0</servlet.api.version>
+        <hibernate.version>6.2.13.Final</hibernate.version>
+        <validation.api.version>3.0.2</validation.api.version>
+        <jwt.version>0.11.5</jwt.version>
+        <mysql.connector.version>8.0.33</mysql.connector.version>
     </properties>
 
     <dependencies>
@@ -26,7 +32,15 @@
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
-            <version>5.0.0</version>
+            <version>${servlet.api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- JSP API -->
+        <dependency>
+            <groupId>jakarta.servlet.jsp</groupId>
+            <artifactId>jakarta.servlet.jsp-api</artifactId>
+            <version>3.1.1</version>
             <scope>provided</scope>
         </dependency>
 
@@ -34,12 +48,22 @@
         <dependency>
             <groupId>jakarta.servlet.jsp.jstl</groupId>
             <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
-            <version>2.0.0</version>
+            <version>${jstl.version}</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.web</groupId>
             <artifactId>jakarta.servlet.jsp.jstl</artifactId>
-            <version>2.0.0</version>
+            <version>${jstl.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>jakarta.servlet</groupId>
+                    <artifactId>jakarta.servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>jakarta.servlet.jsp</groupId>
+                    <artifactId>jakarta.servlet.jsp-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Jackson (para JSON) -->
@@ -58,7 +82,26 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.33</version>
+            <version>${mysql.connector.version}</version>
+        </dependency>
+
+        <!-- Hibernate ORM -->
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <version>${hibernate.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>8.0.0.Final</version>
+        </dependency>
+
+        <!-- Jakarta Validation API -->
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>${validation.api.version}</version>
         </dependency>
 
         <!-- BCrypt para hash de senhas -->
@@ -66,6 +109,25 @@
             <groupId>org.mindrot</groupId>
             <artifactId>jbcrypt</artifactId>
             <version>0.4</version>
+        </dependency>
+
+        <!-- JWT (JSON Web Tokens) -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jwt.version}</version>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- Logging -->
@@ -96,13 +158,13 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>4.5.1</version>
+            <version>5.5.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
-            <version>4.5.1</version>
+            <version>5.5.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -118,7 +180,6 @@
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
-                    <encoding>${project.build.sourceEncoding}</encoding>
                     <compilerArgs>
                         <arg>-parameters</arg>
                     </compilerArgs>
@@ -132,23 +193,6 @@
                 <version>3.4.0</version>
                 <configuration>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
-                    <archive>
-                        <manifest>
-                            <addClasspath>true</addClasspath>
-                        </manifest>
-                    </archive>
-                    <webResources>
-                        <resource>
-                            <directory>src/main/webapp</directory>
-                            <filtering>true</filtering>
-                            <includes>
-                                <include>**/*.jsp</include>
-                                <include>**/*.html</include>
-                                <include>**/*.css</include>
-                                <include>**/*.js</include>
-                            </includes>
-                        </resource>
-                    </webResources>
                 </configuration>
             </plugin>
 
@@ -157,21 +201,17 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.1.2</version>
-                <configuration>
-                    <useSystemClassLoader>false</useSystemClassLoader>
-                </configuration>
             </plugin>
 
-            <!-- Plugin para Tomcat -->
+            <!-- Plugin para Tomcat (atualizado para Tomcat 10+) -->
             <plugin>
                 <groupId>org.apache.tomcat.maven</groupId>
-                <artifactId>tomcat7-maven-plugin</artifactId>
-                <version>${tomcat.plugin.version}</version>
+                <artifactId>tomcat10-maven-plugin</artifactId>
+                <version>${tomcat.version}</version>
                 <configuration>
                     <path>/</path>
                     <port>8080</port>
                     <uriEncoding>UTF-8</uriEncoding>
-                    <server>tomcat</server>
                 </configuration>
             </plugin>
         </plugins>
