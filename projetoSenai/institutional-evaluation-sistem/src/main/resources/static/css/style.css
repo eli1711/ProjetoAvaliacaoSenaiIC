@@ -1,0 +1,23 @@
+.question-card {
+    transition: all 0.3s ease;
+}
+.question-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+.navbar-brand {
+    font-weight: 600;
+}
+.active-tab {
+    border-bottom: 3px solid #0d6efd;
+    font-weight: 500;
+}
+.question-type-badge {
+    font-size: 0.75rem;
+}
+.scale-preview {
+    background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+    height: 8px;
+    border-radius: 4px;
+    margin-top: 5px;
+}
