@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Responder Questionário</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<h1>Responder Questionário</h1>
+
+<div th:if="${errorMessage}" style="color:red">
+    <p th:text="${errorMessage}"></p>
+</div>
+
+<form th:action="@{/questionnaire/submit}" method="post" th:object="${answerListRequest}">
+    <div th:each="answer, stat : *{answers}">
+        <h3 th:text="${questions[stat.index].text}"></h3>
+        <input type="hidden" th:field="*{answers[__${stat.index}__].questionId}"/>
+        <textarea th:field="*{answers[__${stat.index}__].answerText}"
+                  placeholder="Digite sua resposta"></textarea>
+    </div>
+    <button type="submit">Enviar</button>
+</form>
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Sucesso</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <h2 th:text="${message}">Respostas enviadas com sucesso!</h2>
+    <a th:href="@{/questionnaire}" class="btn">Responder novamente</a>
+    <a th:href="@{/}" class="btn">Voltar ao início</a>
+</body>
+</html>
