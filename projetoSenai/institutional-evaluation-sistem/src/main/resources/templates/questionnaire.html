@@ -2,25 +2,51 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Responder Questionário</title>
+    <title>Questionário</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
 <h1>Responder Questionário</h1>
 
-<div th:if="${errorMessage}" style="color:red">
-    <p th:text="${errorMessage}"></p>
-</div>
+<form th:action="@{/questionnaire/submit}" th:object="${answerListRequest}" method="post">
+    <div th:each="q, iterStat : ${questions}" class="question-card mb-4 p-3 rounded shadow-sm bg-white">
+        <p>
+            <strong th:text="${q.text}"></strong>
 
-<form th:action="@{/questionnaire/submit}" method="post" th:object="${answerListRequest}">
-    <div th:each="answer, stat : *{answers}">
-        <h3 th:text="${questions[stat.index].text}"></h3>
-        <input type="hidden" th:field="*{answers[__${stat.index}__].questionId}"/>
-        <textarea th:field="*{answers[__${stat.index}__].answerText}"
-                  placeholder="Digite sua resposta"></textarea>
+            <!-- Questões qualitativas (texto livre) -->
+            <div th:if="${q.type.name() == 'QUALITATIVE'}">
+                <input type="text"
+                       th:field="*{answers[__${iterStat.index}__].answerText}"
+                       class="form-control"
+                       placeholder="Digite sua resposta aqui" />
+
+                <!-- Vincula o ID da questão escondido -->
+                <input type="hidden" th:field="*{answers[__${iterStat.index}__].questionId}" th:value="${q.id}" />
+            </div>
+
+            <!-- Questões quantitativas (escala 1–5 ou minScale–maxScale) -->
+            <div th:if="${q.type.name() == 'QUANTITATIVE'}" class="scale-options">
+                <label th:each="i : ${#numbers.sequence(q.minScale, q.maxScale)}">
+                    <input type="radio"
+                           th:field="*{answers[__${iterStat.index}__].answerText}"
+                           th:value="${i}" />
+                    <span th:text="${i}"></span>
+                </label>
+
+                <!-- Vincula o ID da questão escondido -->
+                <input type="hidden" th:field="*{answers[__${iterStat.index}__].questionId}" th:value="${q.id}" />
+            </div>
+        </p>
     </div>
-    <button type="submit">Enviar</button>
+
+    <button type="submit" class="btn btn-primary">Enviar Respostas</button>
 </form>
 
+
+<!-- Mensagens -->
+<p th:if="${message}" class="message success" th:text="${message}"></p>
+<p th:if="${errorMessage}" class="message error" th:text="${errorMessage}"></p>
+
+ <script th:src="@{/js/app.js}"></script>
 </body>
 </html>

@@ -17,27 +17,40 @@ public class AnswerController {
     @Autowired
     private AnswerService answerService;
 
+    /**
+     * Cria uma nova resposta
+     */
     @PostMapping
     public ResponseEntity<?> createAnswer(@Valid @RequestBody AnswerRequest request) {
         try {
-            Answer saved = answerService.saveAnswer(request);
+            Answer saved = answerService.createAnswer(request);
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Erro ao salvar resposta: " + e.getMessage());
+            return ResponseEntity
+                    .badRequest()
+                    .body("❌ Erro ao salvar resposta: " + e.getMessage());
         }
     }
 
+    /**
+     * Retorna todas as respostas
+     */
     @GetMapping
     public ResponseEntity<List<Answer>> getAllAnswers() {
         return ResponseEntity.ok(answerService.getAllAnswers());
     }
 
+    /**
+     * Retorna respostas de uma questão específica
+     */
     @GetMapping("/question/{questionId}")
     public ResponseEntity<?> getAnswersByQuestion(@PathVariable Long questionId) {
         try {
             return ResponseEntity.ok(answerService.getAnswersByQuestion(questionId));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Erro: " + e.getMessage());
+            return ResponseEntity
+                    .badRequest()
+                    .body("❌ Erro ao buscar respostas: " + e.getMessage());
         }
     }
 }

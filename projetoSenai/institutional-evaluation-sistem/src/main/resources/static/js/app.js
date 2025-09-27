@@ -349,3 +349,26 @@ function hideError() {
 function showNoQuestionsMessage(show) {
     noQuestionsMessage.style.display = show ? 'block' : 'none';
 }
+// Validação básica do formulário
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.querySelector("form");
+
+    form.addEventListener("submit", function (event) {
+        let valid = true;
+        const inputs = form.querySelectorAll("input[type='text']");
+
+        inputs.forEach((input) => {
+            if (input.value.trim() === "") {
+                input.style.borderColor = "red";
+                valid = false;
+            } else {
+                input.style.borderColor = "#ccc";
+            }
+        });
+
+        if (!valid) {
+            event.preventDefault();
+            alert("⚠️ Por favor, responda todas as perguntas antes de enviar.");
+        }
+    });
+});
