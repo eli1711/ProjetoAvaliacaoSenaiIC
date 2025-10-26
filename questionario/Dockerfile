@@ -1,28 +1,32 @@
-
 FROM eclipse-temurin:21-jdk AS build
 
-# Define diretório de trabalho dentro do container
 WORKDIR /app
 
-# Copia todos os arquivos do projeto para o container
-COPY . .
+# Copia primeiro os arquivos do Maven wrapper e POM (para cache eficiente)
+COPY mvnw .
+COPY .mvn/ .mvn/
+COPY pom.xml .
 
-# Garante que o mvnw tenha permissão de execução
+# Dá permissão e baixa dependências
 RUN chmod +x mvnw
+RUN ./mvnw dependency:go-offline -B
 
-# Build do projeto sem rodar testes
+# Copia o código fonte
+COPY src ./src
+
+# Build do projeto
 RUN ./mvnw clean package -DskipTests
 
-# Etapa 2: Imagem final para rodar a aplicação
-FROM eclipse-temurin:21-jdk
+# Imagem final (usa JRE para imagem menor)
+FROM eclipse-temurin:21-jre-jammy
 
 WORKDIR /app
 
-# Copia o JAR gerado na etapa de build
-COPY --from=build /app/target/*.jar app.jar
+# Copia o JAR com o nome correto baseado no seu pom.xml
+COPY --from=build /app/target/questionario-0.0.1-SNAPSHOT.jar app.jar
 
-# Expõe a porta padrão do Spring Boot
+# Expõe a porta
 EXPOSE 8080
 
-# Comando para rodar a aplicação
+# Comando para executar
 ENTRYPOINT ["java", "-jar", "app.jar"]

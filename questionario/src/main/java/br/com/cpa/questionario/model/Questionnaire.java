@@ -1,6 +1,7 @@
 package br.com.cpa.questionario.model;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -20,6 +21,7 @@ public class Questionnaire {
 
     private String name;
     private int semester;
+    @Column(name = "\"year\"")
     private int year;
 
     @Enumerated(EnumType.STRING)
