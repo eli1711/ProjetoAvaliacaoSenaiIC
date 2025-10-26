@@ -1,28 +1,26 @@
-
-FROM eclipse-temurin:21-jdk AS build
-
-# Define diretório de trabalho dentro do container
+# Etapa 1: Build
+FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# Copia todos os arquivos do projeto para o container
-COPY . .
+# Copia o pom.xml e baixa dependências em cache
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
 
-# Garante que o mvnw tenha permissão de execução
-RUN chmod +x mvnw
+# Copia o restante do código
+COPY src ./src
 
-# Build do projeto sem rodar testes
-RUN ./mvnw clean package -DskipTests
+# Gera o JAR final
+RUN mvn clean package -DskipTests
 
-# Etapa 2: Imagem final para rodar a aplicação
-FROM eclipse-temurin:21-jdk
-
+# Etapa 2: Runtime
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-# Copia o JAR gerado na etapa de build
+# Copia o JAR gerado da etapa anterior
 COPY --from=build /app/target/*.jar app.jar
 
-# Expõe a porta padrão do Spring Boot
+# Define a porta padrão
 EXPOSE 8080
 
-# Comando para rodar a aplicação
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Comando para iniciar a aplicação
+ENTRYPOINT ["java","-jar","app.jar"]
