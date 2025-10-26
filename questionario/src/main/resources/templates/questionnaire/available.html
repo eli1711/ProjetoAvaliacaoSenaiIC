@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Questionários Disponíveis</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen py-10 px-6 flex flex-col items-center">
+  <div class="bg-white shadow-xl rounded-2xl p-8 w-full max-w-4xl border border-gray-200">
+    <h1 class="text-2xl font-bold text-gray-800 mb-8 text-center tracking-tight">
+      Questionários Disponíveis
+    </h1>
+
+    <!-- Lista de questionários -->
+    <div th:if="${#lists.isEmpty(questionnaires)}" class="text-center text-gray-600 py-8">
+      <p class="italic">Nenhum questionário disponível no momento.</p>
+    </div>
+
+    <ul th:if="${!#lists.isEmpty(questionnaires)}" class="space-y-4">
+      <th:block th:each="questionnaire : ${questionnaires}">
+        <li class="flex justify-between items-center bg-gray-50 border border-gray-200 rounded-lg px-5 py-3 shadow-sm hover:shadow-md hover:bg-gray-100 transition duration-150">
+          <span class="text-gray-800 font-medium" th:text="${questionnaire.name}">Nome do questionário</span>
+          <a th:href="@{/questionnaires/{id}/respond(id=${questionnaire.id})}"
+             class="inline-block bg-blue-600 text-white text-sm px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition duration-150">
+            Responder
+          </a>
+        </li>
+      </th:block>
+    </ul>
+
+    <!-- Link de retorno -->
+    <div class="text-center mt-10">
+      <a href="/questionnaires"
+         class="inline-block text-blue-600 hover:text-blue-800 font-medium transition duration-150">
+        ← Voltar para a lista de questionários
+      </a>
+    </div>
+  </div>
+</body>
+</html>

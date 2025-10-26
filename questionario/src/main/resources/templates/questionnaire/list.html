@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel de Questionários</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 min-h-screen flex flex-col">
+  <!-- 🔹 Cabeçalho institucional -->
+  <header class="bg-blue-600 text-white shadow-md py-4 px-8 flex justify-between items-center">
+    <h1 class="text-xl font-bold tracking-tight">Painel de Gestão de Questionários</h1>
+
+    <form class="logout-form" th:action="@{/logout}" method="post">
+      <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+      <button type="submit"
+              class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium shadow transition duration-150">
+        ⏻ Sair
+      </button>
+    </form>
+  </header>
+
+  <!-- 🔹 Conteúdo principal -->
+  <main class="flex-grow px-6 py-10 max-w-6xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-200 mt-8 mb-8">
+    <!-- Menu principal -->
+    <section>
+      <h2 class="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2 mb-6">Menu principal</h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <a href="/questionnaires/available"
+           class="bg-blue-600 text-white text-center py-3 rounded-lg font-medium shadow hover:bg-blue-700 transition duration-150">
+          📋 Questionários Disponíveis
+        </a>
+        <a href="/questionnaires/new"
+           class="bg-green-600 text-white text-center py-3 rounded-lg font-medium shadow hover:bg-green-700 transition duration-150">
+          ➕ Criar Novo Questionário
+        </a>
+        <a href="/users/new"
+           class="bg-amber-500 text-white text-center py-3 rounded-lg font-medium shadow hover:bg-amber-600 transition duration-150">
+          👤 Criar Novo Usuário
+        </a>
+        <a href="/users"
+           class="bg-blue-500 text-white text-center py-3 rounded-lg font-medium shadow hover:bg-blue-600 transition duration-150">
+          👥 Listar Usuários
+        </a>
+      </div>
+    </section>
+
+    <!-- Lista de questionários -->
+    <section>
+      <h2 class="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2 mb-6">Lista de Questionários</h2>
+
+      <div th:if="${#lists.isEmpty(questionnaires)}" class="text-center text-gray-600 py-6 italic">
+        <p>Nenhum questionário cadastrado até o momento.</p>
+      </div>
+
+      <ul th:each="questionnaire : ${questionnaires}" class="space-y-3">
+        <li class="bg-gray-50 flex justify-between items-center p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition duration-150">
+          <span class="text-gray-800 font-medium" th:text="${questionnaire.name}">Nome do Questionário</span>
+          <div class="flex gap-2">
+            <a th:href="@{/questionnaires/{id}(id=${questionnaire.id})}"
+               class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition duration-150">
+              🔍 Visualizar
+            </a>
+            <a th:href="@{/questionnaires/{id}/edit(id=${questionnaire.id})}"
+               class="bg-amber-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-amber-600 transition duration-150">
+              ✏️ Editar
+            </a>
+            <form th:action="@{/questionnaires/{id}/delete(id=${questionnaire.id})}" method="post" class="inline"
+                  onsubmit="return confirm('Tem certeza que deseja excluir este questionário?')">
+              <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+              <button type="submit"
+                      class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition duration-150">
+                🗑️ Apagar
+              </button>
+            </form>
+          </div>
+        </li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- 🔹 Rodapé institucional -->
+  <footer class="text-center py-6 text-gray-500 text-sm">
+    © 2025 Sistema de Avaliação CPA — Desenvolvido com Spring Boot & Thymeleaf
+  </footer>
+</body>
+</html>
