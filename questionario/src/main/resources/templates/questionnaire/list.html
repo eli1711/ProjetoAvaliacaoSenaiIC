@@ -3,87 +3,86 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Painel de Questionários</title>
+  <title>Modelos de Questionário</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-50 min-h-screen flex flex-col">
-  <!-- 🔹 Cabeçalho institucional -->
-  <header class="bg-blue-600 text-white shadow-md py-4 px-8 flex justify-between items-center">
-    <h1 class="text-xl font-bold tracking-tight">Painel de Gestão de Questionários</h1>
+<body class="bg-slate-100 min-h-screen flex flex-col">
+<header class="bg-sky-700 text-white shadow">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+    <a href="/home" class="font-semibold tracking-tight text-lg">CPA - Avaliações Institucionais</a>
+    <nav class="flex items-center gap-4 text-sm">
+      <a href="/home" class="hover:text-sky-200">Início</a>
+      <a href="/avaliacoes" class="hover:text-sky-200">Avaliações</a>
+      <a href="/users" class="hover:text-sky-200">Usuários</a>
+      <form th:action="@{/logout}" method="post" class="inline">
+        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+        <button type="submit"
+                class="ml-3 px-3 py-1 rounded-lg bg-sky-900 hover:bg-sky-800 text-xs font-medium">
+          Sair
+        </button>
+      </form>
+    </nav>
+  </div>
+</header>
 
-    <form class="logout-form" th:action="@{/logout}" method="post">
-      <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-      <button type="submit"
-              class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium shadow transition duration-150">
-        ⏻ Sair
-      </button>
-    </form>
-  </header>
-
-  <!-- 🔹 Conteúdo principal -->
-  <main class="flex-grow px-6 py-10 max-w-6xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-200 mt-8 mb-8">
-    <!-- Menu principal -->
-    <section>
-      <h2 class="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2 mb-6">Menu principal</h2>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        <a href="/questionnaires/available"
-           class="bg-blue-600 text-white text-center py-3 rounded-lg font-medium shadow hover:bg-blue-700 transition duration-150">
-          📋 Questionários Disponíveis
-        </a>
-        <a href="/questionnaires/new"
-           class="bg-green-600 text-white text-center py-3 rounded-lg font-medium shadow hover:bg-green-700 transition duration-150">
-          ➕ Criar Novo Questionário
-        </a>
-        <a href="/users/new"
-           class="bg-amber-500 text-white text-center py-3 rounded-lg font-medium shadow hover:bg-amber-600 transition duration-150">
-          👤 Criar Novo Usuário
-        </a>
-        <a href="/users"
-           class="bg-blue-500 text-white text-center py-3 rounded-lg font-medium shadow hover:bg-blue-600 transition duration-150">
-          👥 Listar Usuários
-        </a>
+<main class="flex-1">
+  <div class="max-w-6xl mx-auto px-4 py-10 bg-white mt-8 mb-8 rounded-2xl shadow border border-slate-200">
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-800">Modelos de Questionário</h1>
+        <p class="text-sm text-slate-500 mt-1">
+          Gerencie os modelos que serão aplicados às turmas a cada semestre.
+        </p>
       </div>
-    </section>
+      <a href="/questionnaires/new"
+         class="bg-emerald-600 text-white px-5 py-2 rounded-lg text-sm font-medium shadow hover:bg-emerald-700 transition">
+        ➕ Novo Questionário
+      </a>
+    </div>
 
-    <!-- Lista de questionários -->
-    <section>
-      <h2 class="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2 mb-6">Lista de Questionários</h2>
+    <div th:if="${#lists.isEmpty(questionnaires)}" class="text-center text-slate-500 italic py-6">
+      Nenhum questionário cadastrado até o momento.
+    </div>
 
-      <div th:if="${#lists.isEmpty(questionnaires)}" class="text-center text-gray-600 py-6 italic">
-        <p>Nenhum questionário cadastrado até o momento.</p>
-      </div>
+    <ul th:if="${!#lists.isEmpty(questionnaires)}" class="space-y-3">
+      <li th:each="questionnaire : ${questionnaires}"
+          class="bg-slate-50 flex justify-between items-center p-4 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition">
+        <div>
+          <p class="text-slate-800 font-medium" th:text="${questionnaire.name}">Nome do Questionário</p>
+          <p class="text-xs text-slate-500 mt-1">
+            Semestre <span th:text="${questionnaire.semester}">1</span> /
+            <span th:text="${questionnaire.year}">2025</span> —
+            <span th:text="${questionnaire.status}">DISPONIVEL</span>
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <a th:href="@{/questionnaires/{id}(id=${questionnaire.id})}"
+             class="bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-sky-700 transition">
+            Visualizar
+          </a>
+          <a th:href="@{/questionnaires/{id}/edit(id=${questionnaire.id})}"
+             class="bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-amber-600 transition">
+            Editar
+          </a>
+          <form th:action="@{/questionnaires/{id}/delete(id=${questionnaire.id})}" method="post"
+                onsubmit="return confirm('Tem certeza que deseja excluir este questionário?')">
+            <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+            <button type="submit"
+                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+              Apagar
+            </button>
+          </form>
+        </div>
+      </li>
+    </ul>
+  </div>
+</main>
 
-      <ul th:each="questionnaire : ${questionnaires}" class="space-y-3">
-        <li class="bg-gray-50 flex justify-between items-center p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition duration-150">
-          <span class="text-gray-800 font-medium" th:text="${questionnaire.name}">Nome do Questionário</span>
-          <div class="flex gap-2">
-            <a th:href="@{/questionnaires/{id}(id=${questionnaire.id})}"
-               class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition duration-150">
-              🔍 Visualizar
-            </a>
-            <a th:href="@{/questionnaires/{id}/edit(id=${questionnaire.id})}"
-               class="bg-amber-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-amber-600 transition duration-150">
-              ✏️ Editar
-            </a>
-            <form th:action="@{/questionnaires/{id}/delete(id=${questionnaire.id})}" method="post" class="inline"
-                  onsubmit="return confirm('Tem certeza que deseja excluir este questionário?')">
-              <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-              <button type="submit"
-                      class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition duration-150">
-                🗑️ Apagar
-              </button>
-            </form>
-          </div>
-        </li>
-      </ul>
-    </section>
-  </main>
-
-  <!-- 🔹 Rodapé institucional -->
-  <footer class="text-center py-6 text-gray-500 text-sm">
-    © 2025 Sistema de Avaliação CPA — Desenvolvido com Spring Boot & Thymeleaf
-  </footer>
+<footer class="border-t border-slate-200 bg-white">
+  <div class="max-w-6xl mx-auto px-4 py-4 text-center text-xs text-slate-500">
+    © 2025 Sistema de Avaliação CPA
+  </div>
+</footer>
 </body>
 </html>

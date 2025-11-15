@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title th:text="'Responder: ' + ${questionnaire.name}">Responder Questionário</title>
+  <title th:text="'Responder: ' + ${questionnaire.name}">Responder Avaliação</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -12,7 +12,7 @@
   <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
     <a href="/home" class="font-semibold tracking-tight text-lg">CPA - Aluno</a>
     <nav class="flex items-center gap-4 text-sm">
-      <a href="/questionnaires/available" class="hover:text-sky-200">Questionários</a>
+      <a href="/avaliacoes" class="hover:text-sky-200">Avaliações</a>
       <form th:action="@{/logout}" method="post" class="inline">
         <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
         <button type="submit"
@@ -26,35 +26,36 @@
 
 <main class="flex-1">
   <div class="max-w-4xl mx-auto px-4 py-10 bg-white rounded-2xl shadow border border-slate-200 mt-8 mb-8">
-    <h1 class="text-2xl font-bold text-sky-700 mb-8 text-center tracking-tight"
-        th:text="'Responder Questionário: ' + ${questionnaire.name}">
-      Responder Questionário
+    <h1 class="text-2xl font-bold text-sky-700 mb-2 text-center tracking-tight"
+        th:text="'Avaliação: ' + ${questionnaire.name}">
+      Avaliação
     </h1>
+    <p class="text-sm text-slate-500 text-center mb-8">
+      Sua participação é anônima e muito importante para a melhoria da instituição.
+    </p>
 
     <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6 text-center">
       <p th:text="${error}"></p>
     </div>
 
-    <div th:if="${success}" class="bg-emerald-100 border border-emerald-400 text-emerald-700 px-4 py-3 rounded-lg mb-6 text-center">
-      <p th:text="${success}"></p>
-    </div>
-
-    <form th:action="@{/questionnaires/{id}/respond(id=${questionnaire.id})}"
+    <form th:action="@{/avaliacoes/{id}/responder(id=${avaliacao.id})}"
           method="post" class="space-y-8">
       <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
 
       <div th:each="q : ${questions}" class="bg-slate-50 p-5 border border-slate-200 rounded-xl shadow-sm">
         <p class="font-semibold text-slate-800 mb-3" th:text="${q.text}">Texto da questão</p>
 
+        <!-- Questão QUALITATIVA -->
         <div th:if="${q.type?.toString() == 'QUALITATIVA'}">
           <label th:for="'resp_' + ${q.id}" class="block text-sm text-slate-600 mb-1">Sua resposta:</label>
           <textarea th:id="'resp_' + ${q.id}"
                     th:name="'responses[' + ${q.id} + ']'"
                     rows="3"
-                    placeholder="Digite sua resposta..."
+                    placeholder="Escreva aqui sua opinião..."
                     class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"></textarea>
         </div>
 
+        <!-- Questão QUANTITATIVA -->
         <div th:if="${q.type?.toString() == 'QUANTITATIVA'}">
           <label th:for="'resp_' + ${q.id}" class="block text-sm text-slate-600 mb-1">
             Sua avaliação (0 a 5):
@@ -77,9 +78,9 @@
     </form>
 
     <div class="text-center mt-8">
-      <a href="/questionnaires/available"
+      <a href="/home"
          class="inline-block text-sky-700 hover:text-sky-900 font-medium text-sm">
-        ← Voltar aos questionários disponíveis
+        ← Voltar ao painel
       </a>
     </div>
   </div>

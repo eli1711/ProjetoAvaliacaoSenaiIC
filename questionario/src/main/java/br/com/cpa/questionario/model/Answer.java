@@ -10,27 +10,36 @@ public class Answer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
+    private String response;
+
     @ManyToOne
     @JoinColumn(name = "question_id", nullable = false)
     private Question question;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String response;
+    // username do usuário que respondeu (serve tanto para questionário direto quanto para avaliação aplicada)
+    @Column(name = "user_username", nullable = false)
+    private String userUsername;
 
+    // se a resposta veio de uma AvaliacaoAplicada, este campo terá valor
     @ManyToOne
-    @JoinColumn(name = "user_username", referencedColumnName = "username", nullable = false)
-    private User user;
+    @JoinColumn(name = "resposta_aluno_id")
+    private RespostaAluno respostaAluno;
 
-    // Getters e Setters
+    // GETTERS / SETTERS ...
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
-    public Question getQuestion() { return question; }
-    public void setQuestion(Question question) { this.question = question; }
 
     public String getResponse() { return response; }
     public void setResponse(String response) { this.response = response; }
 
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+    public Question getQuestion() { return question; }
+    public void setQuestion(Question question) { this.question = question; }
+
+    public String getUserUsername() { return userUsername; }
+    public void setUserUsername(String userUsername) { this.userUsername = userUsername; }
+
+    public RespostaAluno getRespostaAluno() { return respostaAluno; }
+    public void setRespostaAluno(RespostaAluno respostaAluno) { this.respostaAluno = respostaAluno; }
 }

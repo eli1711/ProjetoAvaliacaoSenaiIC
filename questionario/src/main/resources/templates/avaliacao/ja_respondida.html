@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Avaliação já respondida</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center">
+  <div class="bg-white border border-slate-200 shadow-xl rounded-2xl p-10 max-w-md w-full text-center">
+    <h1 class="text-2xl font-bold text-slate-800 mb-3">
+      Avaliação já respondida
+    </h1>
+    <p class="text-slate-600 mb-6">
+      Nosso sistema identificou que você já respondeu esta avaliação.
+      Cada aluno só pode enviar suas respostas uma única vez por turma/questionário.
+    </p>
+
+    <a href="/home"
+       class="inline-block bg-sky-600 text-white px-6 py-2 rounded-lg font-medium shadow hover:bg-sky-700 transition text-sm">
+      Voltar ao painel
+    </a>
+  </div>
+</body>
+</html>

@@ -20,15 +20,18 @@ public class Question {
     @JoinColumn(name = "questionnaire_id")
     private Questionnaire questionnaire;
 
-    // getters/setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
     public String getText() { return text; }
     public void setText(String text) { this.text = text; }
+
     public QuestionType getType() { return type; }
     public void setType(QuestionType type) { this.type = type; }
+
     public Integer getScore() { return score; }
     public void setScore(Integer score) { this.score = score; }
+
     public Questionnaire getQuestionnaire() { return questionnaire; }
     public void setQuestionnaire(Questionnaire questionnaire) { this.questionnaire = questionnaire; }
 }

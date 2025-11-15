@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Turmas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen py-10 px-6 flex flex-col items-center">
+<div class="bg-white shadow-xl rounded-2xl p-8 w-full max-w-5xl border border-slate-200">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">Turmas</h1>
+    <a href="/turmas/new"
+       class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow hover:bg-blue-700">
+      ➕ Nova Turma
+    </a>
+  </div>
+
+  <div th:if="${success}" class="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2 rounded-lg text-sm"
+       th:text="${success}"></div>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full border border-slate-200 rounded-lg overflow-hidden shadow-sm text-sm">
+      <thead class="bg-slate-100 text-slate-800 uppercase">
+      <tr>
+        <th class="px-4 py-3 text-left">Nome</th>
+        <th class="px-4 py-3 text-left">Curso</th>
+        <th class="px-4 py-3 text-center">Ano/Semestre</th>
+        <th class="px-4 py-3 text-center">Ações</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="t : ${turmas}" class="border-t border-slate-100 hover:bg-slate-50">
+        <td class="px-4 py-3" th:text="${t.nome}">Nome</td>
+        <td class="px-4 py-3" th:text="${t.curso}">Curso</td>
+        <td class="px-4 py-3 text-center">
+          <span th:text="${t.ano}">2025</span> /
+          <span th:text="${t.semestre}">1</span>
+        </td>
+        <td class="px-4 py-3 text-center">
+          <div class="inline-flex gap-2">
+            <a th:href="@{/turmas/{id}/edit(id=${t.id})}"
+               class="px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-medium hover:bg-amber-600">
+              ✏️ Editar
+            </a>
+            <form th:action="@{/turmas/{id}/delete(id=${t.id})}" method="post"
+                  onsubmit="return confirm('Tem certeza que deseja excluir esta turma?');">
+              <button type="submit"
+                      class="px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs font-medium hover:bg-red-600">
+                🗑️ Excluir
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+
+      <tr th:if="${#lists.isEmpty(turmas)}">
+        <td colspan="4" class="px-4 py-6 text-center text-slate-500 italic">
+          Nenhuma turma cadastrada.
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="text-center mt-8">
+    <a href="/home"
+       class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+      ← Voltar ao painel
+    </a>
+  </div>
+</div>
+</body>
+</html>

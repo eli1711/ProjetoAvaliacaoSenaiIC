@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Painel Principal - Sistema CPA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col">
+
+<header class="bg-sky-700 text-white shadow">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+    <a href="/home" class="font-semibold tracking-tight text-lg">CPA - Avaliações Institucionais</a>
+    <nav class="flex items-center gap-4 text-sm">
+      <a href="/avaliacoes" class="hover:text-sky-200">Avaliações</a>
+      <a href="/questionnaires" class="hover:text-sky-200">Questionários</a>
+      <a href="/users" class="hover:text-sky-200">Usuários</a>
+      <a href="/turmas" class="hover:text-sky-200">Turmas</a>
+      <form th:action="@{/logout}" method="post" class="inline">
+        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+        <button type="submit"
+                class="ml-3 px-3 py-1 rounded-lg bg-sky-900 hover:bg-sky-800 text-xs font-medium">
+          Sair
+        </button>
+      </form>
+    </nav>
+  </div>
+</header>
+
+<main class="flex-1">
+  <div class="max-w-6xl mx-auto px-4 py-10">
+    <h1 class="text-2xl font-bold text-slate-800 mb-6 tracking-tight">
+      Bem-vindo ao Sistema de Avaliação CPA
+    </h1>
+
+    <p class="text-slate-600 mb-8">
+      Utilize o painel abaixo para acessar rapidamente as principais funcionalidades
+      do sistema: gestão de questionários, turmas, usuários e acompanhamento das avaliações aplicadas.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+      <!-- Card: Avaliações aplicadas (admin/gestor) -->
+      <a href="/avaliacoes"
+         class="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-800 mb-2">Avaliações Aplicadas</h2>
+          <p class="text-sm text-slate-600">
+            Gerencie quais questionários estão aplicados em cada turma, datas de início/fim
+            e acompanhe o status (aberta, fechada, encerrada).
+          </p>
+        </div>
+        <span class="mt-4 inline-flex items-center text-sm text-sky-700 font-medium">
+          Ir para Avaliações →
+        </span>
+      </a>
+
+      <!-- Card: Modelos de Questionário -->
+      <a href="/questionnaires"
+         class="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-800 mb-2">Modelos de Questionário</h2>
+          <p class="text-sm text-slate-600">
+            Crie, edite e reutilize questionários para diferentes semestres,
+            cursos e turmas.
+          </p>
+        </div>
+        <span class="mt-4 inline-flex items-center text-sm text-sky-700 font-medium">
+          Gerenciar Questionários →
+        </span>
+      </a>
+
+      <!-- Card: Usuários -->
+      <a href="/users"
+         class="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-800 mb-2">Usuários</h2>
+          <p class="text-sm text-slate-600">
+            Cadastre alunos, gestores e administradores com seus respectivos perfis
+            de acesso.
+          </p>
+        </div>
+        <span class="mt-4 inline-flex items-center text-sm text-sky-700 font-medium">
+          Gerenciar Usuários →
+        </span>
+      </a>
+
+      <!-- Card: Avaliações disponíveis para responder (aluno) -->
+      <a href="/avaliacoes/disponiveis"
+         class="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-800 mb-2">Avaliações Disponíveis</h2>
+          <p class="text-sm text-slate-600">
+            Veja as avaliações aplicadas à sua turma que estão abertas para resposta.
+          </p>
+        </div>
+        <span class="mt-4 inline-flex items-center text-sm text-sky-700 font-medium">
+          Ver Avaliações Disponíveis →
+        </span>
+      </a>
+
+      <!-- Card: Turmas (com dois botões) -->
+      <div
+        class="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-800 mb-2">Turmas</h2>
+          <p class="text-sm text-slate-600">
+            Cadastre novas turmas, edite informações existentes e visualize todas as turmas por
+            curso, semestre e ano letivo.
+          </p>
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-2">
+          <!-- Botão: lista de turmas -->
+          <a href="/turmas"
+             class="inline-flex items-center justify-center text-sm px-4 py-2 rounded-lg border border-sky-700 text-sky-700 hover:bg-sky-50">
+            Ver turmas
+          </a>
+
+          <!-- Botão: nova turma -->
+          <a href="/turmas/new"
+             class="inline-flex items-center justify-center text-sm px-4 py-2 rounded-lg bg-sky-700 text-white font-medium hover:bg-sky-800 shadow-sm">
+            Nova turma
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<footer class="border-t border-slate-200 bg-white">
+  <div class="max-w-6xl mx-auto px-4 py-4 text-center text-xs text-slate-500">
+    © 2025 Sistema de Avaliação CPA — Desenvolvido com Spring Boot &amp; Thymeleaf
+  </div>
+</footer>
+
+</body>
+</html>
