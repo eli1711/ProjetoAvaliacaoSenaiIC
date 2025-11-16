@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt" xmlns:th="http://www.thymeleaf.org">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
@@ -8,7 +8,7 @@
   </title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-100 min-h-screen flex flex-col">
+<body class="bg-slate-100 min-h-screen flex flex-col font-sans">
 
 <header class="bg-sky-700 text-white shadow">
   <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
@@ -34,6 +34,7 @@
 <main class="flex-1">
   <div class="max-w-3xl mx-auto px-4 py-10">
 
+    <!-- Breadcrumb + título -->
     <div class="mb-6">
       <p class="text-xs text-slate-500 mb-1">
         <a href="/home" class="hover:underline">Início</a>
@@ -46,8 +47,12 @@
           th:text="${turma.id} == null ? 'Cadastrar nova turma' : 'Editar turma'">
         Cadastrar nova turma
       </h1>
+      <p class="text-sm text-slate-500 mt-1">
+        Preencha os dados abaixo para cadastrar ou atualizar uma turma no sistema.
+      </p>
     </div>
 
+    <!-- Card do formulário -->
     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
       <form th:action="@{/turmas}" th:object="${turma}" method="post" class="space-y-5">
         <!-- CSRF -->
@@ -61,10 +66,14 @@
           <label for="nome" class="block text-sm font-medium text-slate-700 mb-1">
             Nome da turma
           </label>
-          <input type="text" id="nome" th:field="*{nome}"
-                 class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
-                        focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                 placeholder="Ex.: ADS 2º Semestre 2025" />
+          <input
+            type="text"
+            id="nome"
+            th:field="*{nome}"
+            required
+            class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
+                   focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+            placeholder="Ex.: ADS 2º Semestre 2025" />
         </div>
 
         <!-- Curso -->
@@ -72,25 +81,30 @@
           <label for="curso" class="block text-sm font-medium text-slate-700 mb-1">
             Curso
           </label>
-          <input type="text" id="curso" th:field="*{curso}"
-                 class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
-                        focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                 placeholder="Ex.: Análise e Desenvolvimento de Sistemas" />
+          <input
+            type="text"
+            id="curso"
+            th:field="*{curso}"
+            required
+            class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
+                   focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+            placeholder="Ex.: Análise e Desenvolvimento de Sistemas" />
         </div>
 
         <!-- Semestre + Ano -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
           <!-- Semestre -->
           <div>
             <label for="semestre" class="block text-sm font-medium text-slate-700 mb-1">
               Semestre
             </label>
-            <select id="semestre" th:field="*{semestre}"
-                    class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
-                           bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
-              <option value="0" disabled
-                      th:selected="*{semestre} == 0">
+            <select
+              id="semestre"
+              th:field="*{semestre}"
+              required
+              class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
+                     bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+              <option value="0" disabled th:selected="*{semestre} == 0">
                 Selecione...
               </option>
               <option value="1">1º Semestre</option>
@@ -103,10 +117,16 @@
             <label for="ano" class="block text-sm font-medium text-slate-700 mb-1">
               Ano letivo
             </label>
-            <input type="number" id="ano" th:field="*{ano}"
-                   class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
-                          focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                   min="2000" max="2100" placeholder="Ex.: 2025" />
+            <input
+              type="number"
+              id="ano"
+              th:field="*{ano}"
+              min="2000"
+              max="2100"
+              required
+              class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+              placeholder="Ex.: 2025" />
           </div>
         </div>
 
@@ -114,12 +134,12 @@
         <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
           <a th:href="@{/turmas}"
              class="text-sm px-4 py-2 rounded-lg border border-slate-300 text-slate-700
-                    hover:bg-slate-50">
+                    hover:bg-slate-50 transition">
             Cancelar
           </a>
           <button type="submit"
                   class="text-sm px-5 py-2.5 rounded-lg bg-sky-700 text-white font-medium
-                         hover:bg-sky-800 shadow-sm">
+                         hover:bg-sky-800 shadow-sm transition">
             <span th:text="${turma.id} == null ? 'Salvar Turma' : 'Atualizar Turma'">
               Salvar Turma
             </span>

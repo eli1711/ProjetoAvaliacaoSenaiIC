@@ -29,49 +29,46 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
-                // ================== PÚBLICO / LOGIN ==================
-                .requestMatchers(
-                        "/login",
-                        "/perform_login",
-                        "/error",
-                        "/css/**",
-                        "/js/**",
-                        "/images/**"
-                ).permitAll()
+    // público / login / cadastro
+    .requestMatchers(
+        "/login", "/perform_login", "/error",
+        "/css/**", "/js/**", "/images/**",
+        "/users/aluno/registro", "/users/aluno/registrar"
+    ).permitAll()
 
-                // ================== ROTAS DO ALUNO (AVALIAÇÕES) ==================
-                // lista de avaliações abertas para o aluno
-                .requestMatchers("/avaliacoes/disponiveis")
-                    .authenticated()
-                // responder avaliação aplicada
-                .requestMatchers("/avaliacoes/*/responder/**")
-                    .authenticated()
+    // ROTAS DO ALUNO
+    .requestMatchers("/avaliacoes/disponiveis", "/avaliacoes/*/responder/**")
+        .hasAuthority("ROLE_ALUNO")
 
-                // ================== USUÁRIOS (APENAS ADMIN) ==================
-                .requestMatchers("/users/**")
-                    .hasAuthority("ROLE_ADMIN")
+    .requestMatchers("/questionnaires/available/**")
+        .hasAuthority("ROLE_ALUNO")
 
-                // ================== TURMAS ==================
-                // listar turmas -> qualquer autenticado
-                .requestMatchers(HttpMethod.GET, "/turmas")
-                    .authenticated()
-                // criar / editar turmas -> ADMIN ou COORDENADOR
-                .requestMatchers(HttpMethod.GET, "/turmas/new", "/turmas/*/edit")
-                    .hasAnyAuthority("ROLE_ADMIN", "ROLE_COORDENADOR")
-                .requestMatchers(HttpMethod.POST, "/turmas/**")
-                    .hasAnyAuthority("ROLE_ADMIN", "ROLE_COORDENADOR")
+    // ANÁLISE
+    .requestMatchers("/analise/**")
+        .hasAnyAuthority("ROLE_ADMIN", "ROLE_PROFESSOR")
 
-                // ================== QUESTIONÁRIOS & AVALIAÇÕES (CRUD) ==================
-                // telas de configuração de questionário + telas de gestão de avaliações
-                .requestMatchers("/questionnaires/**", "/avaliacoes/**")
-                    .hasAnyAuthority("ROLE_ADMIN", "ROLE_PROFESSOR")
+    // USUÁRIOS
+    .requestMatchers("/users/**")
+        .hasAnyAuthority("ROLE_ADMIN", "ADMIN")
 
-                // ================== HOME ==================
-                .requestMatchers("/", "/home")
-                    .authenticated()
+    // TURMAS
+    .requestMatchers(HttpMethod.GET, "/turmas")
+        .authenticated()
+    .requestMatchers(HttpMethod.GET, "/turmas/new", "/turmas/*/edit")
+        .hasAnyAuthority("ROLE_ADMIN", "ROLE_COORDENADOR")
+    .requestMatchers(HttpMethod.POST, "/turmas/**")
+        .hasAnyAuthority("ROLE_ADMIN", "ROLE_COORDENADOR")
 
-                // ================== QUALQUER OUTRA ROTA ==================
-                .anyRequest().authenticated()
+    // QUESTIONÁRIOS & AVALIAÇÕES (GESTÃO)
+    .requestMatchers("/questionnaires/**", "/avaliacoes/**")
+        .hasAnyAuthority("ROLE_ADMIN", "ROLE_PROFESSOR")
+
+    // HOME
+    .requestMatchers("/", "/home").authenticated()
+
+    // qualquer outra rota
+    .anyRequest().authenticated()
+
             )
             .formLogin(f -> f
                 .loginPage("/login")
