@@ -12,9 +12,10 @@ public class RespostaAluno {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // AGORA referencia Aluno, não User
     @ManyToOne(optional = false)
-    @JoinColumn(name = "aluno_username", referencedColumnName = "username")
-    private User aluno;
+    @JoinColumn(name = "aluno_id") // FK para aluno.id
+    private Aluno aluno;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "avaliacao_aplicada_id")
@@ -31,8 +32,8 @@ public class RespostaAluno {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public User getAluno() { return aluno; }
-    public void setAluno(User aluno) { this.aluno = aluno; }
+    public Aluno getAluno() { return aluno; }
+    public void setAluno(Aluno aluno) { this.aluno = aluno; }
 
     public AvaliacaoAplicada getAvaliacaoAplicada() { return avaliacaoAplicada; }
     public void setAvaliacaoAplicada(AvaliacaoAplicada avaliacaoAplicada) {

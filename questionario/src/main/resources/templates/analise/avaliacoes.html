@@ -196,21 +196,37 @@
           </div>
         </div>
 
-        <!-- Tabela de distribuição (nota x quantidade) -->
+        <!-- Tabela de distribuição (nota x quantidade x alternativa) -->
         <div class="overflow-x-auto">
           <table class="min-w-full text-xs border border-slate-200 rounded-lg overflow-hidden">
             <thead class="bg-slate-50">
             <tr>
               <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Nota</th>
+              <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Alternativa</th>
               <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Qtd. respostas</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="notaEntry : ${entry.value}">
+              <!-- Nota numérica -->
               <td class="px-3 py-2 border-b border-slate-100"
                   th:text="${notaEntry.key}">
                 0
               </td>
+
+              <!-- Texto da alternativa correspondente -->
+              <td class="px-3 py-2 border-b border-slate-100"
+                  th:text="${
+                    notaEntry.key == 1 ? entry.key.option1Label :
+                    (notaEntry.key == 2 ? entry.key.option2Label :
+                    (notaEntry.key == 3 ? entry.key.option3Label :
+                    (notaEntry.key == 4 ? entry.key.option4Label :
+                    (notaEntry.key == 0 ? entry.key.option5Label : '-'))))
+                  }">
+                Alternativa
+              </td>
+
+              <!-- Quantidade de respostas -->
               <td class="px-3 py-2 border-b border-slate-100"
                   th:text="${notaEntry.value}">
                 0

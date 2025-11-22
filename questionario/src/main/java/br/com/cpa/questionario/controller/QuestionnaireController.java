@@ -241,6 +241,12 @@ public class QuestionnaireController {
                                  @RequestParam String text,
                                  @RequestParam String type,
                                  @RequestParam(required = false) Integer score,
+                                 // labels das alternativas (1–4) + 5ª opcional
+                                 @RequestParam(required = false) String option1Label,
+                                 @RequestParam(required = false) String option2Label,
+                                 @RequestParam(required = false) String option3Label,
+                                 @RequestParam(required = false) String option4Label,
+                                 @RequestParam(required = false) String option5Label, // <<< NOVO
                                  Model model) {
 
         Questionnaire questionnaire = getQuestionnaireOrThrow(id);
@@ -253,10 +259,51 @@ public class QuestionnaireController {
                     QuestionType.valueOf(type.toUpperCase(Locale.ROOT).trim());
             question.setType(questionType);
 
-            if (questionType == QuestionType.QUANTITATIVA && score != null) {
-                question.setScore(score);
+            if (questionType == QuestionType.QUANTITATIVA) {
+                // score como peso (opcional)
+                if (score != null) {
+                    question.setScore(score);
+                } else {
+                    question.setScore(4); // default opcional
+                }
+
+                // Defaults se não preencher no form
+                if (option1Label == null || option1Label.isBlank()) {
+                    option1Label = "Discordo totalmente";
+                }
+                if (option2Label == null || option2Label.isBlank()) {
+                    option2Label = "Discordo parcialmente";
+                }
+                if (option3Label == null || option3Label.isBlank()) {
+                    option3Label = "Concordo parcialmente";
+                }
+                if (option4Label == null || option4Label.isBlank()) {
+                    option4Label = "Concordo totalmente";
+                }
+
+                question.setOption1Label(option1Label);
+                question.setOption2Label(option2Label);
+                question.setOption3Label(option3Label);
+                question.setOption4Label(option4Label);
+
+                // 5ª opção OPCIONAL: “Não sei opinar”
+                if (option5Label != null && !option5Label.isBlank()) {
+                    // se o usuário preencher, usamos o texto que ele quiser
+                    question.setOption5Label(option5Label);
+                } else {
+                    // se quiser que sempre exista essa opção como default, troque para:
+                    // question.setOption5Label("Não sei opinar");
+                    question.setOption5Label(null); // sem 5ª opção
+                }
+
             } else {
+                // QUALITATIVA: sem score / sem labels
                 question.setScore(null);
+                question.setOption1Label(null);
+                question.setOption2Label(null);
+                question.setOption3Label(null);
+                question.setOption4Label(null);
+                question.setOption5Label(null);
             }
 
         } catch (IllegalArgumentException e) {

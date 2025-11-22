@@ -98,7 +98,7 @@
         <div>
           <h3 class="text-lg font-semibold text-slate-800 mb-2">Usuários</h3>
           <p class="text-sm text-slate-600">
-            Cadastre alunos, gestores e administradores, definindo os perfis de acesso
+            Cadastre gestores, professores e administradores, definindo os perfis de acesso
             de forma simples e organizada.
           </p>
         </div>
@@ -147,6 +147,35 @@
              class="inline-flex items-center justify-center text-sm px-4 py-2 rounded-lg bg-sky-700 text-white
                     font-medium hover:bg-sky-800 shadow-sm transition">
             Nova turma
+          </a>
+        </div>
+      </div>
+
+      <!-- NOVO CARD: Alunos (visualizar + importar CSV) -->
+      <div
+        class="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 flex flex-col justify-between
+               hover:shadow-md hover:-translate-y-0.5 transition transform">
+        <div>
+          <h3 class="text-lg font-semibold text-slate-800 mb-2">Alunos</h3>
+          <p class="text-sm text-slate-600">
+            Gerencie os alunos da instituição, visualize os cadastros existentes
+            e importe novos alunos através de arquivos CSV.
+          </p>
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-2">
+          <!-- Botão: visualizar alunos cadastrados -->
+          <a href="/alunos"
+             class="inline-flex items-center justify-center text-sm px-4 py-2 rounded-lg border border-sky-700
+                    text-sky-700 hover:bg-sky-50 transition">
+            Ver alunos cadastrados
+          </a>
+
+          <!-- Botão: importar alunos via CSV -->
+          <a href="/alunos/import"
+             class="inline-flex items-center justify-center text-sm px-4 py-2 rounded-lg bg-sky-700 text-white
+                    font-medium hover:bg-sky-800 shadow-sm transition">
+            Importar alunos (CSV)
           </a>
         </div>
       </div>

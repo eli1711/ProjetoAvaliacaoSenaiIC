@@ -27,6 +27,7 @@ public class AvaliacaoAplicadaController {
     private final AnswerRepository answerRepository;
     private final UserRepository userRepository;
     private final AvaliacaoEmailService avaliacaoEmailService;
+    private final AlunoRepository alunoRepository;
 
     public AvaliacaoAplicadaController(AvaliacaoAplicadaRepository avaliacaoAplicadaRepository,
                                        QuestionnaireRepository questionnaireRepository,
@@ -35,7 +36,8 @@ public class AvaliacaoAplicadaController {
                                        RespostaAlunoRepository respostaAlunoRepository,
                                        AnswerRepository answerRepository,
                                        UserRepository userRepository,
-                                       AvaliacaoEmailService avaliacaoEmailService) {
+                                       AvaliacaoEmailService avaliacaoEmailService,
+                                       AlunoRepository alunoRepository) {
         this.avaliacaoAplicadaRepository = avaliacaoAplicadaRepository;
         this.questionnaireRepository = questionnaireRepository;
         this.questionRepository = questionRepository;
@@ -44,6 +46,7 @@ public class AvaliacaoAplicadaController {
         this.answerRepository = answerRepository;
         this.userRepository = userRepository;
         this.avaliacaoEmailService = avaliacaoEmailService;
+        this.alunoRepository = alunoRepository;
     }
 
     // ====== LISTAGEM (Admin / Gestor) ======
@@ -54,49 +57,56 @@ public class AvaliacaoAplicadaController {
     }
 
     // ====== LISTAR AVALIAÇÕES DISPONÍVEIS PARA O ALUNO LOGADO ======
-// ====== LISTAR AVALIAÇÕES DISPONÍVEIS PARA O ALUNO LOGADO ======
-@GetMapping("/disponiveis")
-public String avaliacoesDisponiveisParaAluno(Model model) {
-    User aluno = getCurrentUser();
-    if (aluno == null) {
-        return "redirect:/login";
+    @GetMapping("/disponiveis")
+    public String avaliacoesDisponiveisParaAluno(Model model) {
+        User user = getCurrentUser();
+        if (user == null) {
+            return "redirect:/login";
+        }
+
+        // Busca o registro de Aluno vinculado ao User
+        Aluno aluno = alunoRepository.findByUserUsername(user.getUsername())
+                .orElse(null);
+        if (aluno == null) {
+            model.addAttribute("error", "Seu usuário não está vinculado a um registro de aluno.");
+            model.addAttribute("avaliacoes", List.of());
+            return "avaliacao/disponiveis";
+        }
+
+        System.out.println(">>> Aluno logado: " + aluno.getRa()
+                + " | user=" + user.getUsername()
+                + " | turma=" + (aluno.getTurma() != null ? aluno.getTurma().getNome() : "SEM TURMA"));
+
+        List<AvaliacaoAplicada> disponiveis = List.of();
+
+        if (aluno.getTurma() != null) {
+            disponiveis = avaliacaoAplicadaRepository
+                    .findByTurmaIdAndStatus(aluno.getTurma().getId(), StatusAvaliacao.ABERTA);
+
+            LocalDateTime agora = LocalDateTime.now();
+
+            disponiveis = disponiveis.stream()
+                    // período de abertura
+                    .filter(a ->
+                            (a.getDataInicio() == null || !agora.isBefore(a.getDataInicio())) &&
+                            (a.getDataFim() == null || !agora.isAfter(a.getDataFim()))
+                    )
+                    // ainda não respondeu essa avaliação
+                    .filter(a -> !respostaAlunoRepository.existsByAlunoAndAvaliacaoAplicada(aluno, a))
+                    .toList();
+        }
+
+        System.out.println(">>> Avaliações encontradas para o aluno: " + disponiveis.size());
+        disponiveis.forEach(a -> System.out.println("   - Aval " + a.getId()
+                + " | turma=" + a.getTurma().getNome()
+                + " | status=" + a.getStatus()
+                + " | inicio=" + a.getDataInicio()
+                + " | fim=" + a.getDataFim()));
+
+        model.addAttribute("avaliacoes", disponiveis);
+        model.addAttribute("aluno", aluno);
+        return "avaliacao/disponiveis";
     }
-
-    System.out.println(">>> Aluno logado: " + aluno.getUsername()
-            + " | role=" + aluno.getRole()
-            + " | turma=" + (aluno.getTurma() != null ? aluno.getTurma().getNome() : "SEM TURMA"));
-
-    List<AvaliacaoAplicada> disponiveis = List.of();
-
-    if (aluno.getTurma() != null) {
-        // Busca só as avaliações da turma do aluno e com status ABERTA
-        disponiveis = avaliacaoAplicadaRepository
-                .findByTurmaIdAndStatus(aluno.getTurma().getId(), StatusAvaliacao.ABERTA);
-
-        LocalDateTime agora = LocalDateTime.now();
-
-        disponiveis = disponiveis.stream()
-                // período (se quiser, pode comentar esse filtro pra testar)
-                .filter(a ->
-                        (a.getDataInicio() == null || !agora.isBefore(a.getDataInicio())) &&
-                        (a.getDataFim() == null || !agora.isAfter(a.getDataFim()))
-                )
-                // ainda não respondeu essa avaliação
-                .filter(a -> !respostaAlunoRepository.existsByAlunoAndAvaliacaoAplicada(aluno, a))
-                .toList();
-    }
-
-    System.out.println(">>> Avaliações encontradas para o aluno: " + disponiveis.size());
-    disponiveis.forEach(a -> System.out.println("   - Aval " + a.getId()
-            + " | turma=" + a.getTurma().getNome()
-            + " | status=" + a.getStatus()
-            + " | inicio=" + a.getDataInicio()
-            + " | fim=" + a.getDataFim()));
-
-    model.addAttribute("avaliacoes", disponiveis);
-    model.addAttribute("aluno", aluno);
-    return "avaliacao/disponiveis";
-}
 
     // ====== FORM NOVA AVALIAÇÃO APLICADA ======
     @GetMapping("/new")
@@ -104,7 +114,7 @@ public String avaliacoesDisponiveisParaAluno(Model model) {
         model.addAttribute("avaliacao", new AvaliacaoAplicada());
         model.addAttribute("turmas", turmaRepository.findAll());
         model.addAttribute("questionnaires", questionnaireRepository.findAll());
-        return "avaliacao/edit";   // template que você já criou para "Nova Avaliação"
+        return "avaliacao/edit";
     }
 
     // ====== CRIA AVALIAÇÃO APLICADA + ENVIA E-MAILS ======
@@ -132,25 +142,31 @@ public String avaliacoesDisponiveisParaAluno(Model model) {
 
         avaliacao = avaliacaoAplicadaRepository.save(avaliacao);
 
-        // Envia e-mails para todos os alunos ATIVOS da turma
+        // envia os e-mails para todos os alunos ativos da turma
         avaliacaoEmailService.enviarConvites(avaliacao);
 
         redirectAttributes.addFlashAttribute("success", "Avaliação criada e e-mails enviados.");
         return "redirect:/avaliacoes";
     }
 
-    // ====== ALUNO RESPONDE AVALIAÇÃO ======
+    // ====== ALUNO RESPONDE AVALIAÇÃO (GET) ======
     @GetMapping("/{id}/responder")
     public String responder(@PathVariable Long id, Model model) {
         AvaliacaoAplicada avaliacao = avaliacaoAplicadaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Avaliação não encontrada"));
 
-        User aluno = getCurrentUser();
-        if (aluno == null) {
+        User user = getCurrentUser();
+        if (user == null) {
             return "redirect:/login";
         }
 
-        // aluno só pode responder UMA vez por avaliação
+        Aluno aluno = alunoRepository.findByUserUsername(user.getUsername())
+                .orElse(null);
+        if (aluno == null) {
+            model.addAttribute("error", "Seu usuário não está vinculado a um registro de aluno.");
+            return "avaliacao/ja_respondida"; // você pode criar uma tela específica de erro se quiser
+        }
+
         if (respostaAlunoRepository.existsByAlunoAndAvaliacaoAplicada(aluno, avaliacao)) {
             model.addAttribute("error", "Você já respondeu esta avaliação.");
             return "avaliacao/ja_respondida";
@@ -160,9 +176,11 @@ public String avaliacoesDisponiveisParaAluno(Model model) {
         model.addAttribute("avaliacao", avaliacao);
         model.addAttribute("questionnaire", q);
         model.addAttribute("questions", questionRepository.findByQuestionnaireId(q.getId()));
+        model.addAttribute("aluno", aluno);
         return "avaliacao/responder";
     }
 
+    // ====== ALUNO RESPONDE AVALIAÇÃO (POST) ======
     @PostMapping("/{id}/responder")
     @Transactional
     public String salvarRespostas(@PathVariable Long id,
@@ -172,9 +190,17 @@ public String avaliacoesDisponiveisParaAluno(Model model) {
         AvaliacaoAplicada avaliacao = avaliacaoAplicadaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Avaliação não encontrada"));
 
-        User aluno = getCurrentUser();
-        if (aluno == null) {
+        User user = getCurrentUser();
+        if (user == null) {
             return "redirect:/login";
+        }
+
+        Aluno aluno = alunoRepository.findByUserUsername(user.getUsername())
+                .orElse(null);
+        if (aluno == null) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Seu usuário não está vinculado a um registro de aluno.");
+            return "redirect:/avaliacoes/" + id + "/responder";
         }
 
         if (respostaAlunoRepository.existsByAlunoAndAvaliacaoAplicada(aluno, avaliacao)) {
@@ -182,25 +208,31 @@ public String avaliacoesDisponiveisParaAluno(Model model) {
             return "redirect:/avaliacoes/" + id + "/responder";
         }
 
-        // cria o "envelope" da resposta do aluno para ESSA avaliação
+        // Cria o registro principal da resposta do aluno para essa avaliação
         RespostaAluno respostaAluno = new RespostaAluno();
-        respostaAluno.setAluno(aluno);
+        respostaAluno.setAluno(aluno); // agora é Aluno, não User
         respostaAluno.setAvaliacaoAplicada(avaliacao);
         respostaAluno.setDataResposta(LocalDateTime.now());
         respostaAluno.setStatusResposta(StatusResposta.RESPONDIDO);
 
         RespostaAluno respostaAlunoSalvo = respostaAlunoRepository.save(respostaAluno);
 
+        // Extrai as respostas do form (responses[ID_QUESTAO] = valor)
         Map<Long, String> responses = extractResponses(params);
+
         responses.forEach((qid, value) -> {
+            if (value == null || value.isBlank()) {
+                return; // ignora se veio vazio
+            }
+
             Question question = questionRepository.findById(qid)
                     .orElseThrow(() -> new IllegalArgumentException("Questão não encontrada: " + qid));
 
             Answer a = new Answer();
             a.setQuestion(question);
-            a.setResponse(value);
-            a.setRespostaAluno(respostaAlunoSalvo);      // liga à avaliação
-            a.setUserUsername(aluno.getUsername());      // para facilitar visualização
+            a.setResponse(value);                // "1", "2", "3", "4" ou texto livre
+            a.setRespostaAluno(respostaAlunoSalvo);
+            a.setUserUsername(user.getUsername()); // ainda salva o username como apoio de visualização
 
             answerRepository.save(a);
         });
@@ -218,10 +250,9 @@ public String avaliacoesDisponiveisParaAluno(Model model) {
         Questionnaire questionnaire = avaliacao.getQuestionario();
         var questions = questionRepository.findByQuestionnaireId(questionnaire.getId());
 
-        // todas as respostas (de todos os alunos) desta avaliação
+        // todas as respostas desta avaliação (todos alunos)
         var answers = answerRepository.findByRespostaAlunoAvaliacaoAplicadaId(id);
 
-        // monta Map<QuestionId, List<Answer>> para o template avaliacao/respostas.html
         Map<Long, List<Answer>> answersByQuestion = new HashMap<>();
         for (Question q : questions) {
             answersByQuestion.put(q.getId(), new ArrayList<>());
@@ -246,8 +277,10 @@ public String avaliacoesDisponiveisParaAluno(Model model) {
             if (k.startsWith("responses[")) {
                 String idStr = k.substring("responses[".length(), k.length() - 1);
                 try {
-                    out.put(Long.parseLong(idStr), v);
-                } catch (Exception ignored) {}
+                    Long qId = Long.parseLong(idStr);
+                    out.put(qId, v);
+                } catch (NumberFormatException ignored) {
+                }
             }
         });
         return out;
