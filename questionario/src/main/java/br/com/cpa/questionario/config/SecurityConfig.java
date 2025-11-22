@@ -30,7 +30,7 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                // rotas públicas (sem precisar estar logado)
+                // Rotas públicas (sem login)
                 .requestMatchers(
                         "/login",
                         "/perform_login",
@@ -44,7 +44,26 @@ public class SecurityConfig {
                         "/users/aluno/registrar"
                 ).permitAll()
 
-                // qualquer outra rota do sistema: só precisa estar autenticado
+                // Rotas específicas para ALUNO
+                // (precisam estar ANTES do "/avaliacoes/**")
+                .requestMatchers("/avaliacoes/disponiveis/**").hasAuthority("ROLE_ALUNO")
+                // se tiver questionário "puro" para aluno:
+                .requestMatchers("/questionnaires/available/**").hasAuthority("ROLE_ALUNO")
+
+                // Rotas de gestão (ADMIN / GESTOR)
+                .requestMatchers(
+                        "/avaliacoes/**",
+                        "/questionnaires/**",
+                        "/users/**",
+                        "/turmas/**",
+                        "/alunos/**",
+                        "/analise/**"
+                ).hasAnyAuthority("ROLE_ADMIN", "ROLE_GESTOR")
+
+                // /home pode ser visto por qualquer usuário autenticado
+                .requestMatchers("/home").authenticated()
+
+                // Qualquer outra rota autenticada (se existir algo extra)
                 .anyRequest().authenticated()
             )
             .formLogin(f -> f
@@ -74,7 +93,6 @@ public class SecurityConfig {
                 throw new UsernameNotFoundException("Usuário não encontrado");
             }
 
-            // se não tiver role no banco, coloca ROLE_USER só pra não ficar vazio
             String role = (u.getRole() == null || u.getRole().isBlank())
                     ? "ROLE_USER"
                     : u.getRole();
