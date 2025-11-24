@@ -1,32 +1,34 @@
-FROM eclipse-temurin:21-jdk AS build
+# ============================
+# STAGE 1 - Build com Maven
+# ============================
+FROM maven:3.9-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
-# Copia primeiro os arquivos do Maven wrapper e POM (para cache eficiente)
-COPY mvnw .
-COPY .mvn/ .mvn/
+# Copia o pom e baixa dependências em cache
 COPY pom.xml .
-
-# Dá permissão e baixa dependências
-RUN chmod +x mvnw
-RUN ./mvnw dependency:go-offline -B
+RUN mvn dependency:go-offline -B
 
 # Copia o código fonte
 COPY src ./src
 
-# Build do projeto
-RUN ./mvnw clean package -DskipTests
+# Gera o jar
+RUN mvn clean package -DskipTests
 
-# Imagem final (usa JRE para imagem menor)
-FROM eclipse-temurin:21-jre-jammy
+# ============================
+# STAGE 2 - Imagem final leve
+# ============================
+FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-# Copia o JAR com o nome correto baseado no seu pom.xml
-COPY --from=build /app/target/questionario-0.0.1-SNAPSHOT.jar app.jar
+# Copia o JAR gerado do stage anterior
+COPY --from=build /app/target/*.jar app.jar
 
-# Expõe a porta
+# Expor a porta da aplicação
 EXPOSE 8080
 
-# Comando para executar
+# Variáveis padrão (podem ser sobrescritas no docker-compose)
+ENV SPRING_PROFILES_ACTIVE=prod
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
