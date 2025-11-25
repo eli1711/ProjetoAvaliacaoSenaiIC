@@ -47,6 +47,7 @@ public class SecurityConfig {
                 // Rotas específicas para ALUNO
                 // (precisam estar ANTES do "/avaliacoes/**")
                 .requestMatchers("/avaliacoes/disponiveis/**").hasAuthority("ROLE_ALUNO")
+                .requestMatchers("/avaliacoes/*/responder/**").hasAuthority("ROLE_ALUNO") // <- ADICIONADO
                 // se tiver questionário "puro" para aluno:
                 .requestMatchers("/questionnaires/available/**").hasAuthority("ROLE_ALUNO")
 
