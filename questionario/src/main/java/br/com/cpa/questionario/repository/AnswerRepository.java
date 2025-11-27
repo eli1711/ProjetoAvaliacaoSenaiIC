@@ -11,6 +11,8 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
 
     void deleteByQuestionQuestionnaireIdAndUserUsernameAndRespostaAlunoIsNull(Long questionnaireId, String userUsername);
 
+    void deleteByRespostaAlunoAvaliacaoAplicadaId(Long avaliacaoId);
+
     List<Answer> findByQuestionQuestionnaireIdAndRespostaAlunoIsNull(Long questionnaireId);
 
     List<Answer> findByQuestionQuestionnaireIdAndUserUsernameAndRespostaAlunoIsNull(Long questionnaireId, String userUsername);

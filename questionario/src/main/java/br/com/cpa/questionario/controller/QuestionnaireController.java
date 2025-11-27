@@ -56,14 +56,17 @@ public class QuestionnaireController {
     }
 
     // =====================================================================
-    //  RESPONDER QUESTIONÁRIO “PURO” (sem AvaliaçãoAplicada)
+    //  RESPONDER QUESTIONÁRIO “PURO” (DESATIVADO COMO COLETA OFICIAL)
     // =====================================================================
 
     @GetMapping("/{id}/respond")
     public String respondQuestionnaire(@PathVariable Long id, Model model) {
+        // Mantemos APENAS como "preview" das perguntas, sem gravar respostas oficiais
         Questionnaire questionnaire = getQuestionnaireOrThrow(id);
         model.addAttribute("questionnaire", questionnaire);
         model.addAttribute("questions", questionRepository.findByQuestionnaireId(id));
+        // Você pode ter uma página só de visualização, sem form de envio,
+        // ou colocar um aviso "este questionário é apenas modelo".
         return "questionnaire/respond";
     }
 
@@ -73,55 +76,16 @@ public class QuestionnaireController {
                                       Principal principal,
                                       RedirectAttributes redirectAttributes) {
 
-        Questionnaire questionnaire = getQuestionnaireOrThrow(id);
-
-        String username = (principal != null ? principal.getName() : "anonimo");
-        System.out.println("Usuário " + username +
-                " enviou respostas para o questionário " + questionnaire.getId() +
-                ": " + formParams);
-
-        // 1) apaga respostas anteriores desse usuário para este questionário "puro"
-        answerRepository.deleteByQuestionQuestionnaireIdAndUserUsernameAndRespostaAlunoIsNull(id, username);
-
-        // 2) monta a lista de Answer novas
-        List<Answer> answersToSave = new ArrayList<>();
-
-        formParams.forEach((key, value) -> {
-            if (!key.startsWith("responses[")) return;
-            if (value == null || value.isBlank()) return;
-
-            try {
-                String idStr = key.substring("responses[".length(), key.length() - 1);
-                Long questionId = Long.parseLong(idStr);
-
-                Question question = questionRepository.findById(questionId)
-                        .orElseThrow(() -> new IllegalArgumentException(
-                                "Questão não encontrada: " + questionId));
-
-                Answer answer = new Answer();
-                answer.setQuestion(question);
-                answer.setResponse(value);
-                answer.setUserUsername(username);   // “dono” da resposta (questionário puro)
-                answer.setRespostaAluno(null);      // *** importante: sem avaliação aplicada
-
-                answersToSave.add(answer);
-
-            } catch (NumberFormatException ex) {
-                System.out.println("Parâmetro de resposta ignorado (id inválido): " + key);
-            }
-        });
-
-        if (!answersToSave.isEmpty()) {
-            answerRepository.saveAll(answersToSave);
-        }
-
-        redirectAttributes.addFlashAttribute("success",
-                "Respostas enviadas com sucesso!");
+        // NOVA REGRA: não salva mais respostas ligadas somente ao questionário.
+        // Se alguém bater aqui, apenas informa que o fluxo oficial é via Avaliação Aplicada.
+        redirectAttributes.addFlashAttribute("error",
+                "Este questionário é um modelo. As respostas oficiais devem ser enviadas pela Avaliação Aplicada da sua turma.");
         return "redirect:/home";
     }
 
     // =====================================================================
     //  VISUALIZAR RESPOSTAS DE UM QUESTIONÁRIO (MODO ADMIN / MODELO)
+    //  (opcionalmente, você pode manter para ver respostas "puras" antigas)
     // =====================================================================
 
     @GetMapping("/{id}/answers")
@@ -129,9 +93,9 @@ public class QuestionnaireController {
         Questionnaire questionnaire = getQuestionnaireOrThrow(id);
 
         var questions = questionRepository.findByQuestionnaireId(id);
+        // Só mostra respostas "puras" antigas, se ainda existirem:
         var answers = answerRepository.findByQuestionQuestionnaireIdAndRespostaAlunoIsNull(id);
 
-        // monta Map<QuestionId, List<Answer>> para o template questionnaire/answers.html
         Map<Long, List<Answer>> answersByQuestion = new HashMap<>();
         for (Question q : questions) {
             answersByQuestion.put(q.getId(), new ArrayList<>());
@@ -241,12 +205,11 @@ public class QuestionnaireController {
                                  @RequestParam String text,
                                  @RequestParam String type,
                                  @RequestParam(required = false) Integer score,
-                                 // labels das alternativas (1–4) + 5ª opcional
                                  @RequestParam(required = false) String option1Label,
                                  @RequestParam(required = false) String option2Label,
                                  @RequestParam(required = false) String option3Label,
                                  @RequestParam(required = false) String option4Label,
-                                 @RequestParam(required = false) String option5Label, // <<< NOVO
+                                 @RequestParam(required = false) String option5Label,
                                  Model model) {
 
         Questionnaire questionnaire = getQuestionnaireOrThrow(id);
@@ -260,14 +223,13 @@ public class QuestionnaireController {
             question.setType(questionType);
 
             if (questionType == QuestionType.QUANTITATIVA) {
-                // score como peso (opcional)
+
                 if (score != null) {
                     question.setScore(score);
                 } else {
-                    question.setScore(4); // default opcional
+                    question.setScore(4);
                 }
 
-                // Defaults se não preencher no form
                 if (option1Label == null || option1Label.isBlank()) {
                     option1Label = "Discordo totalmente";
                 }
@@ -286,18 +248,13 @@ public class QuestionnaireController {
                 question.setOption3Label(option3Label);
                 question.setOption4Label(option4Label);
 
-                // 5ª opção OPCIONAL: “Não sei opinar”
                 if (option5Label != null && !option5Label.isBlank()) {
-                    // se o usuário preencher, usamos o texto que ele quiser
                     question.setOption5Label(option5Label);
                 } else {
-                    // se quiser que sempre exista essa opção como default, troque para:
-                    // question.setOption5Label("Não sei opinar");
-                    question.setOption5Label(null); // sem 5ª opção
+                    question.setOption5Label(null);
                 }
 
             } else {
-                // QUALITATIVA: sem score / sem labels
                 question.setScore(null);
                 question.setOption1Label(null);
                 question.setOption2Label(null);

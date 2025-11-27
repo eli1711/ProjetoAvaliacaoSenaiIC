@@ -96,6 +96,12 @@
         <p th:text="${success}"></p>
       </div>
 
+      <!-- MENSAGEM DE ERRO -->
+      <div th:if="${error}"
+           class="mb-4 bg-red-50 border border-red-400 text-red-800 px-4 py-3 rounded text-sm">
+        <p th:text="${error}"></p>
+      </div>
+
       <div class="overflow-x-auto">
         <table class="min-w-full border border-slate-200 rounded-lg overflow-hidden shadow-sm">
           <thead class="bg-slate-100 text-slate-800 uppercase text-xs font-semibold">
@@ -160,11 +166,27 @@
               </td>
 
               <!-- AÇÕES -->
-              <td class="px-4 py-3 text-sm text-right">
+              <td class="px-4 py-3 text-sm text-right space-x-2">
                 <a th:href="@{/avaliacoes/{id}/respostas(id=${a.id})}"
                    class="inline-block bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-800 transition">
                   Ver respostas
                 </a>
+
+                <a th:href="@{/avaliacoes/{id}/edit(id=${a.id})}"
+                   class="inline-block bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-amber-600 transition">
+                  Editar
+                </a>
+
+                <form th:action="@{/avaliacoes/{id}/delete(id=${a.id})}"
+                      method="post"
+                      class="inline form-excluir-avaliacao"
+                      th:attr="data-questionario=${a.questionario.name}">
+                  <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+                  <button type="submit"
+                          class="inline-block bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-700 transition">
+                    Apagar
+                  </button>
+                </form>
               </td>
             </tr>
 
@@ -198,5 +220,27 @@
     © 2025 Sistema de Avaliação CPA
   </div>
 </footer>
+
+<!-- CONFIRMAÇÃO AO APAGAR AVALIAÇÃO -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const forms = document.querySelectorAll(".form-excluir-avaliacao");
+
+    forms.forEach(function (form) {
+      form.addEventListener("submit", function (e) {
+        const nomeQuestionario = form.getAttribute("data-questionario") || "esta avaliação";
+        const msg = "Tem certeza de que deseja apagar a avaliação:\n\n"
+          + "   \"" + nomeQuestionario + "\"?\n\n"
+          + "Esta ação irá apagar também TODAS as respostas vinculadas "
+          + "e não poderá ser desfeita.";
+
+        if (!confirm(msg)) {
+          e.preventDefault();
+        }
+      });
+    });
+  });
+</script>
+
 </body>
 </html>

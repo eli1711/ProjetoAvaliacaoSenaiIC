@@ -8,4 +8,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface RespostaAlunoRepository extends JpaRepository<RespostaAluno, Long> {
 
     boolean existsByAlunoAndAvaliacaoAplicada(Aluno aluno, AvaliacaoAplicada avaliacaoAplicada);
+    void deleteByAvaliacaoAplicada(AvaliacaoAplicada avaliacaoAplicada);
 }

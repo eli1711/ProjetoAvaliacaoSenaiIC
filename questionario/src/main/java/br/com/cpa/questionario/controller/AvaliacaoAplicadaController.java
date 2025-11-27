@@ -52,7 +52,13 @@ public class AvaliacaoAplicadaController {
     // ====== LISTAGEM (Admin / Gestor) ======
     @GetMapping
     public String list(Model model) {
-        model.addAttribute("avaliacoes", avaliacaoAplicadaRepository.findAll());
+        List<AvaliacaoAplicada> avaliacoes = avaliacaoAplicadaRepository.findAll();
+        // opcional: ordenar por data de início (mais recente primeiro)
+        avaliacoes.sort(Comparator.comparing(
+                AvaliacaoAplicada::getDataInicio,
+                Comparator.nullsLast(Comparator.reverseOrder()))
+        );
+        model.addAttribute("avaliacoes", avaliacoes);
         return "avaliacao/list";
     }
 
@@ -64,7 +70,6 @@ public class AvaliacaoAplicadaController {
             return "redirect:/login";
         }
 
-        // Busca o registro de Aluno vinculado ao User
         Aluno aluno = alunoRepository.findByUserUsername(user.getUsername())
                 .orElse(null);
         if (aluno == null) {
@@ -83,25 +88,46 @@ public class AvaliacaoAplicadaController {
             disponiveis = avaliacaoAplicadaRepository
                     .findByTurmaIdAndStatus(aluno.getTurma().getId(), StatusAvaliacao.ABERTA);
 
-            LocalDateTime agora = LocalDateTime.now();
+            System.out.println(">>> Avaliações ABERTAS encontradas pela turma (antes dos filtros): " + disponiveis.size());
 
+            LocalDateTime agora = LocalDateTime.now();
+            System.out.println(">>> Agora = " + agora);
+
+            for (AvaliacaoAplicada a : disponiveis) {
+                System.out.println("  - Aval " + a.getId()
+                        + " | turma=" + (a.getTurma() != null ? a.getTurma().getNome() : "null")
+                        + " | status=" + a.getStatus()
+                        + " | inicio=" + a.getDataInicio()
+                        + " | fim=" + a.getDataFim());
+            }
+
+            // 1) filtro por período
             disponiveis = disponiveis.stream()
-                    // período de abertura
-                    .filter(a ->
-                            (a.getDataInicio() == null || !agora.isBefore(a.getDataInicio())) &&
-                            (a.getDataFim() == null || !agora.isAfter(a.getDataFim()))
-                    )
-                    // ainda não respondeu essa avaliação
-                    .filter(a -> !respostaAlunoRepository.existsByAlunoAndAvaliacaoAplicada(aluno, a))
+                    .filter(a -> {
+                        boolean dentroPeriodo =
+                                (a.getDataInicio() == null || !agora.isBefore(a.getDataInicio())) &&
+                                (a.getDataFim() == null || !agora.isAfter(a.getDataFim()));
+
+                        if (!dentroPeriodo) {
+                            System.out.println("    -> REMOVIDA pelo período: Aval " + a.getId()
+                                    + " (agora=" + agora
+                                    + ", inicio=" + a.getDataInicio()
+                                    + ", fim=" + a.getDataFim() + ")");
+                        }
+                        return dentroPeriodo;
+                    })
+                    // 2) filtro "ainda não respondeu"
+                    .filter(a -> {
+                        boolean jaRespondeu = respostaAlunoRepository.existsByAlunoAndAvaliacaoAplicada(aluno, a);
+                        if (jaRespondeu) {
+                            System.out.println("    -> REMOVIDA porque aluno JÁ respondeu: Aval " + a.getId());
+                        }
+                        return !jaRespondeu;
+                    })
                     .toList();
         }
 
-        System.out.println(">>> Avaliações encontradas para o aluno: " + disponiveis.size());
-        disponiveis.forEach(a -> System.out.println("   - Aval " + a.getId()
-                + " | turma=" + a.getTurma().getNome()
-                + " | status=" + a.getStatus()
-                + " | inicio=" + a.getDataInicio()
-                + " | fim=" + a.getDataFim()));
+        System.out.println(">>> Avaliações encontradas para o aluno (depois de todos os filtros): " + disponiveis.size());
 
         model.addAttribute("avaliacoes", disponiveis);
         model.addAttribute("aluno", aluno);
@@ -111,13 +137,16 @@ public class AvaliacaoAplicadaController {
     // ====== FORM NOVA AVALIAÇÃO APLICADA ======
     @GetMapping("/new")
     public String newAvaliacao(Model model) {
-        model.addAttribute("avaliacao", new AvaliacaoAplicada());
+        AvaliacaoAplicada avaliacao = new AvaliacaoAplicada();
+        avaliacao.setStatus(StatusAvaliacao.ABERTA); // default no formulário
+
+        model.addAttribute("avaliacao", avaliacao);
         model.addAttribute("turmas", turmaRepository.findAll());
         model.addAttribute("questionnaires", questionnaireRepository.findAll());
         return "avaliacao/edit";
     }
 
-    // ====== CRIA AVALIAÇÃO APLICADA + ENVIA E-MAILS ======
+    // ====== CRIA AVALIAÇÃO APLICADA + (opcionalmente) ENVIA E-MAILS ======
     @PostMapping
     @Transactional
     public String createAvaliacao(@RequestParam Long turmaId,
@@ -126,6 +155,7 @@ public class AvaliacaoAplicadaController {
                                   LocalDateTime dataInicio,
                                   @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
                                   LocalDateTime dataFim,
+                                  @RequestParam(required = false) StatusAvaliacao status,
                                   RedirectAttributes redirectAttributes) {
 
         Turma turma = turmaRepository.findById(turmaId)
@@ -138,14 +168,70 @@ public class AvaliacaoAplicadaController {
         avaliacao.setQuestionario(questionnaire);
         avaliacao.setDataInicio(dataInicio);
         avaliacao.setDataFim(dataFim);
-        avaliacao.setStatus(StatusAvaliacao.ABERTA);
+
+        if (status != null) {
+            avaliacao.setStatus(status);
+        } else {
+            avaliacao.setStatus(StatusAvaliacao.ABERTA);
+        }
 
         avaliacao = avaliacaoAplicadaRepository.save(avaliacao);
 
-        // envia os e-mails para todos os alunos ativos da turma
-        avaliacaoEmailService.enviarConvites(avaliacao);
+        // Só envia e-mail se a avaliação estiver ABERTA
+        if (avaliacao.getStatus() == StatusAvaliacao.ABERTA) {
+            avaliacaoEmailService.enviarConvites(avaliacao);
+            redirectAttributes.addFlashAttribute("success",
+                    "Avaliação criada com sucesso e e-mails enviados.");
+        } else {
+            redirectAttributes.addFlashAttribute("success",
+                    "Avaliação criada com status: " + avaliacao.getStatus());
+        }
 
-        redirectAttributes.addFlashAttribute("success", "Avaliação criada e e-mails enviados.");
+        return "redirect:/avaliacoes";
+    }
+
+    // ====== EDITAR AVALIAÇÃO APLICADA (GET) ======
+    @GetMapping("/{id}/edit")
+    public String editAvaliacao(@PathVariable Long id, Model model) {
+        AvaliacaoAplicada avaliacao = avaliacaoAplicadaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Avaliação não encontrada"));
+
+        model.addAttribute("avaliacao", avaliacao);
+        model.addAttribute("turmas", turmaRepository.findAll());
+        model.addAttribute("questionnaires", questionnaireRepository.findAll());
+        return "avaliacao/edit";
+    }
+
+    // ====== EDITAR AVALIAÇÃO APLICADA (POST) ======
+    @PostMapping("/{id}/edit")
+    @Transactional
+    public String updateAvaliacao(@PathVariable Long id,
+                                  @RequestParam Long turmaId,
+                                  @RequestParam Long questionnaireId,
+                                  @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                                  LocalDateTime dataInicio,
+                                  @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                                  LocalDateTime dataFim,
+                                  @RequestParam StatusAvaliacao status,
+                                  RedirectAttributes redirectAttributes) {
+
+        AvaliacaoAplicada avaliacao = avaliacaoAplicadaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Avaliação não encontrada"));
+
+        Turma turma = turmaRepository.findById(turmaId)
+                .orElseThrow(() -> new IllegalArgumentException("Turma não encontrada"));
+        Questionnaire questionnaire = questionnaireRepository.findById(questionnaireId)
+                .orElseThrow(() -> new IllegalArgumentException("Questionário não encontrado"));
+
+        avaliacao.setTurma(turma);
+        avaliacao.setQuestionario(questionnaire);
+        avaliacao.setDataInicio(dataInicio);
+        avaliacao.setDataFim(dataFim);
+        avaliacao.setStatus(status);   // AGORA ATUALIZA O STATUS DE VERDADE
+
+        avaliacaoAplicadaRepository.save(avaliacao);
+
+        redirectAttributes.addFlashAttribute("success", "Avaliação atualizada com sucesso.");
         return "redirect:/avaliacoes";
     }
 
@@ -164,7 +250,7 @@ public class AvaliacaoAplicadaController {
                 .orElse(null);
         if (aluno == null) {
             model.addAttribute("error", "Seu usuário não está vinculado a um registro de aluno.");
-            return "avaliacao/ja_respondida"; // você pode criar uma tela específica de erro se quiser
+            return "avaliacao/ja_respondida"; // ou outra tela de erro
         }
 
         if (respostaAlunoRepository.existsByAlunoAndAvaliacaoAplicada(aluno, avaliacao)) {
@@ -210,7 +296,7 @@ public class AvaliacaoAplicadaController {
 
         // Cria o registro principal da resposta do aluno para essa avaliação
         RespostaAluno respostaAluno = new RespostaAluno();
-        respostaAluno.setAluno(aluno); // agora é Aluno, não User
+        respostaAluno.setAluno(aluno);
         respostaAluno.setAvaliacaoAplicada(avaliacao);
         respostaAluno.setDataResposta(LocalDateTime.now());
         respostaAluno.setStatusResposta(StatusResposta.RESPONDIDO);
@@ -230,9 +316,9 @@ public class AvaliacaoAplicadaController {
 
             Answer a = new Answer();
             a.setQuestion(question);
-            a.setResponse(value);                // "1", "2", "3", "4" ou texto livre
+            a.setResponse(value);
             a.setRespostaAluno(respostaAlunoSalvo);
-            a.setUserUsername(user.getUsername()); // ainda salva o username como apoio de visualização
+            a.setUserUsername(user.getUsername()); // apoio
 
             answerRepository.save(a);
         });
@@ -240,6 +326,26 @@ public class AvaliacaoAplicadaController {
         redirectAttributes.addFlashAttribute("success", "Respostas enviadas com sucesso!");
         return "redirect:/home";
     }
+    @PostMapping("/{id}/delete")
+@Transactional
+public String deleteAvaliacao(@PathVariable Long id,
+                              RedirectAttributes redirectAttributes) {
+
+    AvaliacaoAplicada avaliacao = avaliacaoAplicadaRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Avaliação não encontrada"));
+
+    // 1) Apaga todas as Answers vinculadas às respostas dessa avaliação
+    answerRepository.deleteByRespostaAlunoAvaliacaoAplicadaId(id);
+
+    // 2) Apaga todos os registros de RespostaAluno dessa avaliação
+    respostaAlunoRepository.deleteByAvaliacaoAplicada(avaliacao);
+
+    // 3) Agora pode apagar a AvaliaçãoAplicada em si
+    avaliacaoAplicadaRepository.delete(avaliacao);
+
+    redirectAttributes.addFlashAttribute("success", "Avaliação apagada com sucesso.");
+    return "redirect:/avaliacoes";
+}
 
     // ====== ADMIN VER RESPOSTAS DE UMA AVALIAÇÃO ESPECÍFICA ======
     @GetMapping("/{id}/respostas")
@@ -250,7 +356,6 @@ public class AvaliacaoAplicadaController {
         Questionnaire questionnaire = avaliacao.getQuestionario();
         var questions = questionRepository.findByQuestionnaireId(questionnaire.getId());
 
-        // todas as respostas desta avaliação (todos alunos)
         var answers = answerRepository.findByRespostaAlunoAvaliacaoAplicadaId(id);
 
         Map<Long, List<Answer>> answersByQuestion = new HashMap<>();
