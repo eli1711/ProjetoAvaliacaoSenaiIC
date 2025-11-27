@@ -89,7 +89,7 @@
 
     <!-- FILTROS -->
     <form method="get"
-          class="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4 bg-white border border-red-100 rounded-2xl p-4 shadow-sm">
+          class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4 bg-white border border-red-100 rounded-2xl p-4 shadow-sm">
 
       <!-- Turma -->
       <div>
@@ -133,22 +133,57 @@
         </select>
       </div>
 
-      <div class="md:col-span-4 flex justify-end gap-2">
-        <a href="/analise/avaliacoes"
-           class="px-4 py-2 text-sm rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100">
-          Limpar filtros
-        </a>
-        <button type="submit"
-                class="px-5 py-2 text-sm rounded-lg bg-red-700 text-white font-medium hover:bg-red-800 shadow-sm inline-flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg"
-               class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 4h18" />
-            <path d="M6 8h12" />
-            <path d="M9 12h6" />
-          </svg>
-          Aplicar filtros
-        </button>
+      <div class="md:col-span-4 flex flex-wrap justify-between items-center gap-2 mt-2">
+        <div class="flex flex-wrap gap-2">
+          <a href="/analise/avaliacoes"
+             class="px-4 py-2 text-sm rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100">
+            Limpar filtros
+          </a>
+          <button type="submit"
+                  class="px-5 py-2 text-sm rounded-lg bg-red-700 text-white font-medium hover:bg-red-800 shadow-sm inline-flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="h-4 w-4" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 4h18" />
+              <path d="M6 8h12" />
+              <path d="M9 12h6" />
+            </svg>
+            Aplicar filtros
+          </button>
+        </div>
+
+        <!-- Botões de exportação CSV -->
+        <div class="flex flex-wrap gap-2">
+          <a th:href="@{/analise/avaliacoes/export-resumo(
+                          turmaId=${selectedTurmaId},
+                          ano=${selectedAno},
+                          avaliacaoId=${selectedAvaliacaoId})}"
+             class="px-4 py-2 text-xs md:text-sm rounded-lg border border-emerald-500 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 inline-flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="h-4 w-4" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 14l3 3 3-3" />
+              <path d="M12 4v13" />
+              <path d="M5 19h14" />
+            </svg>
+            Exportar resumo (CSV)
+          </a>
+
+          <a th:href="@{/analise/avaliacoes/export-perguntas(
+                          turmaId=${selectedTurmaId},
+                          ano=${selectedAno},
+                          avaliacaoId=${selectedAvaliacaoId})}"
+             class="px-4 py-2 text-xs md:text-sm rounded-lg border border-blue-500 text-blue-700 bg-blue-50 hover:bg-blue-100 inline-flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="h-4 w-4" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3h18v4H3z" />
+              <path d="M3 11h18v4H3z" />
+              <path d="M3 19h18v2H3z" />
+            </svg>
+            Exportar distribuição (CSV)
+          </a>
+        </div>
       </div>
     </form>
 
@@ -400,7 +435,7 @@
         },
         options: {
           responsive: true,
-          maintainAspectRatio: false, // respeita o quadrado do container
+          maintainAspectRatio: false,
           plugins: {
             legend: {
               position: "bottom",
