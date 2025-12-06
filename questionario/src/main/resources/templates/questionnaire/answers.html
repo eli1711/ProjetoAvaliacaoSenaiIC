@@ -1,168 +1,77 @@
 <!DOCTYPE html>
-<html lang="pt-BR"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title th:text="'Respostas do Questionário: ' + ${questionnaire.name}">
-    Respostas do Questionário
-  </title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <title>Avaliações Aplicadas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gradient-to-br from-slate-100 to-red-100 min-h-screen flex flex-col font-sans">
+<body class="bg-slate-100 min-h-screen flex flex-col">
 
-<!-- Cabeçalho padrão vermelho -->
 <header class="bg-red-700 text-white shadow">
-  <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center gap-4">
-
-    <a href="/home" class="font-semibold tracking-tight text-lg flex items-center gap-3">
-      <span class="inline-flex items-center justify-center h-9 w-9 rounded-md bg-red-800 text-xs font-bold">
-        CPA
-      </span>
-      <div class="flex flex-col leading-tight">
-        <span class="text-sm uppercase tracking-[0.2em] text-red-100">Sistema CPA</span>
-        <span class="text-base">Avaliações Institucionais</span>
-      </div>
-    </a>
-
-    <!-- MENU ADMIN / GESTOR -->
-    <nav class="hidden md:flex items-center gap-5 text-xs font-medium"
-         sec:authorize="hasAnyAuthority('ROLE_ADMIN','ROLE_GESTOR')">
-      <a href="/avaliacoes" class="hover:text-red-100 transition">Avaliações</a>
-      <a href="/questionnaires" class="hover:text-red-100 font-semibold underline underline-offset-4 transition">
-        Questionários
-      </a>
-      <a href="/users" class="hover:text-red-100 transition">Usuários</a>
-      <a href="/turmas" class="hover:text-red-100 transition">Turmas</a>
-      <a href="/analise/avaliacoes" class="hover:text-red-100 transition">Análises</a>
-      <a href="/alunos" class="hover:text-red-100 transition">Alunos</a>
-
-      <form th:action="@{/logout}" method="post" class="inline">
-        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-        <button type="submit"
-                class="ml-2 px-3 py-1.5 rounded-full bg-red-900 hover:bg-red-800 text-[11px] font-semibold shadow-sm transition">
-          Sair
-        </button>
-      </form>
-    </nav>
-
-    <!-- MENU ALUNO (se cair aqui) -->
-    <nav class="hidden md:flex items-center gap-4 text-xs font-medium"
-         sec:authorize="hasAuthority('ROLE_ALUNO')">
-      <a href="/avaliacoes/disponiveis" class="hover:text-red-100 transition">
-        Minhas Avaliações
-      </a>
-      <form th:action="@{/logout}" method="post" class="inline">
-        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-        <button
-          type="submit"
-          class="ml-2 px-3 py-1.5 rounded-full bg-red-900 hover:bg-red-800 text-[11px] font-semibold shadow-sm transition">
-          Sair
-        </button>
-      </form>
-    </nav>
-
-    <!-- Versão mobile -->
-    <div class="flex md:hidden items-center gap-2">
-      <a href="/questionnaires"
-         class="text-xs px-3 py-1.5 rounded-full bg-red-800 hover:bg-red-900 transition">
-        Questionários
-      </a>
-      <form th:action="@{/logout}" method="post" class="inline" sec:authorize="isAuthenticated()">
-        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-        <button
-          type="submit"
-          class="px-3 py-1.5 rounded-full bg-red-900 hover:bg-red-800 text-[11px] font-semibold shadow-sm transition">
-          Sair
-        </button>
-      </form>
+    <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+        <a href="/home" class="text-lg font-semibold flex items-center gap-3">
+            <span class="inline-flex items-center justify-center h-9 w-9 rounded bg-red-800 text-xs font-bold">CPA</span>
+            <span>Painel Administrativo</span>
+        </a>
+        <nav class="hidden md:flex gap-5 text-xs font-medium">
+            <a href="/avaliacoes" class="hover:text-red-100 transition">Avaliações</a>
+            <a href="/analise/avaliacoes" class="hover:text-red-100 transition">Relatórios</a>
+        </nav>
     </div>
-
-  </div>
 </header>
 
-<main class="flex-1 flex flex-col items-center py-10 px-6">
-  <div class="bg-white shadow-xl rounded-2xl p-8 w-full max-w-5xl border border-red-100">
+<main class="flex-1">
 
-    <!-- Título + contexto -->
-    <div class="mb-8 text-center">
-      <div class="inline-flex items-center gap-2 rounded-full bg-red-50 text-red-700 px-3 py-1 mb-3">
-        <span class="inline-block h-2 w-2 rounded-full bg-red-600"></span>
-        <span class="text-[11px] font-semibold tracking-wide uppercase">
-          Respostas do Questionário
-        </span>
-      </div>
+    <div class="max-w-6xl mx-auto px-4 py-10">
 
-      <h1 class="text-2xl font-bold text-slate-900 mb-2 tracking-tight"
-          th:text="'Respostas - ' + ${questionnaire.name}">
-        Respostas do Questionário
-      </h1>
-      <p class="text-sm text-slate-500">
-        Visualize as respostas registradas para cada questão deste questionário.
-      </p>
+        <div class="flex justify-between mb-6">
+            <h1 class="text-2xl font-bold text-slate-800">Avaliações Aplicadas</h1>
+            <a href="/avaliacoes/new"
+               class="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800 shadow">
+                Aplicar Avaliação
+            </a>
+        </div>
+
+        <div class="bg-white p-6 border border-slate-200 rounded-xl shadow">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-200 text-slate-700">
+                <tr>
+                    <th class="px-4 py-2 text-left">Turma</th>
+                    <th class="px-4 py-2 text-left">Questionário</th>
+                    <th class="px-4 py-2 text-left">Data</th>
+                    <th class="px-4 py-2 text-center">Ações</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="a : ${avaliacoes}" class="border-b border-slate-200 hover:bg-slate-50">
+                    <td class="px-4 py-2" th:text="${a.turma.nome}">Turma</td>
+                    <td class="px-4 py-2" th:text="${a.questionario.name}">Questionário</td>
+                    <td class="px-4 py-2" th:text="${#temporals.format(a.dataAplicacao, 'dd/MM/yyyy')}">
+                        01/12/2025
+                    </td>
+
+                    <td class="px-4 py-2 text-center space-x-4">
+                        <a th:href="@{/avaliacoes/{id}/respostas(id=${a.id})}"
+                           class="text-blue-600 hover:underline">
+                            Ver Respostas
+                        </a>
+
+                        <a th:href="@{/avaliacoes/{id}/delete(id=${a.id})}"
+                           onclick="return confirm('Excluir aplicação?')"
+                           class="text-red-600 hover:underline">
+                            Excluir
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
     </div>
 
-    <!-- Caso não haja perguntas -->
-    <div th:if="${#lists.isEmpty(questions)}" class="text-center text-slate-600 py-8">
-      <p class="italic">Este questionário não possui perguntas cadastradas.</p>
-    </div>
-
-    <!-- Loop das questões -->
-    <div th:each="q : ${questions}" class="mb-10">
-      <h2 class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2 mb-4"
-          th:text="${q.text}">
-        Texto da questão
-      </h2>
-
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left text-slate-700 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-          <thead class="bg-red-50 text-red-800 uppercase text-[11px] font-semibold tracking-wide">
-            <tr>
-              <th class="px-4 py-3">Aluno</th>
-              <th class="px-4 py-3">Resposta</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- answersByQuestion é um Map<Long, List<Answer>> vindo do controller -->
-            <tr th:each="a : ${answersByQuestion[q.id]}"
-                class="border-t border-slate-100 hover:bg-slate-50 transition duration-150">
-              <td class="px-4 py-3" th:text="${a.userUsername}">login do aluno</td>
-              <td class="px-4 py-3" th:text="${a.response}">Texto da resposta</td>
-            </tr>
-
-            <!-- Quando não há respostas para a questão -->
-            <tr th:if="${#lists.isEmpty(answersByQuestion[q.id])}">
-              <td colspan="2" class="px-4 py-3 italic text-slate-500 text-center">
-                Nenhuma resposta registrada para esta questão.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Link de retorno -->
-    <div class="text-center mt-10">
-      <a href="/questionnaires"
-         class="inline-flex items-center gap-2 text-red-700 hover:text-red-900 font-medium text-sm transition duration-150">
-        <svg xmlns="http://www.w3.org/2000/svg"
-             class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
-        <span>Voltar para a lista de questionários</span>
-      </a>
-    </div>
-  </div>
 </main>
-
-<footer class="border-t border-slate-200 bg-white mt-6">
-  <div class="max-w-6xl mx-auto px-4 py-4 text-center text-xs text-slate-500">
-    © 2025 Sistema de Avaliação CPA — Desenvolvido com Spring Boot &amp; Thymeleaf
-  </div>
-</footer>
 
 </body>
 </html>

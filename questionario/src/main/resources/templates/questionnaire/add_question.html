@@ -11,10 +11,8 @@
 
 <body class="bg-gradient-to-br from-slate-100 to-red-100 min-h-screen flex flex-col font-sans">
 
-<!-- Cabeçalho padrão vermelho -->
 <header class="bg-red-700 text-white shadow">
   <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center gap-4">
-
     <a href="/home" class="font-semibold tracking-tight text-lg flex items-center gap-3">
       <span class="inline-flex items-center justify-center h-9 w-9 rounded-md bg-red-800 text-xs font-bold">
         CPA
@@ -25,7 +23,6 @@
       </div>
     </a>
 
-    <!-- MENU ADMIN / GESTOR -->
     <nav class="hidden md:flex items-center gap-5 text-xs font-medium"
          sec:authorize="hasAnyAuthority('ROLE_ADMIN','ROLE_GESTOR')">
       <a href="/avaliacoes" class="hover:text-red-100 transition">Avaliações</a>
@@ -46,23 +43,6 @@
       </form>
     </nav>
 
-    <!-- MENU ALUNO (se cair aqui) -->
-    <nav class="hidden md:flex items-center gap-4 text-xs font-medium"
-         sec:authorize="hasAuthority('ROLE_ALUNO')">
-      <a href="/avaliacoes/disponiveis" class="hover:text-red-100 transition">
-        Minhas Avaliações
-      </a>
-      <form th:action="@{/logout}" method="post" class="inline">
-        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-        <button
-          type="submit"
-          class="ml-2 px-3 py-1.5 rounded-full bg-red-900 hover:bg-red-800 text-[11px] font-semibold shadow-sm transition">
-          Sair
-        </button>
-      </form>
-    </nav>
-
-    <!-- Versão mobile -->
     <div class="flex md:hidden items-center gap-2">
       <a href="/questionnaires"
          class="text-xs px-3 py-1.5 rounded-full bg-red-800 hover:bg-red-900 transition">
@@ -77,7 +57,6 @@
         </button>
       </form>
     </div>
-
   </div>
 </header>
 
@@ -85,7 +64,6 @@
   <div class="max-w-3xl mx-auto px-4 py-10">
     <div class="bg-white mt-4 mb-8 rounded-2xl shadow border border-red-100 p-8">
 
-      <!-- Título + contexto -->
       <div class="mb-4 text-center">
         <div class="inline-flex items-center gap-2 rounded-full bg-red-50 text-red-700 px-3 py-1 mb-3">
           <span class="inline-block h-2 w-2 rounded-full bg-red-600"></span>
@@ -94,25 +72,12 @@
           </span>
         </div>
 
-        <div class="flex flex-col items-center gap-2">
-          <div class="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center">
-            <!-- Ícone formulário -->
-            <svg xmlns="http://www.w3.org/2000/svg"
-                 class="h-5 w-5 text-red-700" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="4" y="3" width="16" height="18" rx="2" />
-              <path d="M8 7h8" />
-              <path d="M8 11h5" />
-              <path d="M8 15h6" />
-            </svg>
-          </div>
-          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
-            Adicionar Questão ao Questionário
-          </h1>
-        </div>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
+          Adicionar Questão ao Questionário
+        </h1>
 
         <p class="text-sm text-slate-500 mt-2">
-          Preencha o texto da questão, escolha o tipo e, se for quantitativa, configure as alternativas.
+          Escolha o item de avaliação e configure a questão.
         </p>
 
         <p class="text-xs text-slate-400 mt-3" th:if="${questionnaire != null}">
@@ -123,7 +88,6 @@
         </p>
       </div>
 
-      <!-- Mensagem de erro opcional -->
       <div th:if="${error}"
            class="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
         <span th:text="${error}">Erro na criação da questão.</span>
@@ -133,7 +97,7 @@
             method="post" class="space-y-6">
         <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
 
-        <!-- Texto da questão -->
+        <!-- Texto -->
         <div>
           <label for="text" class="block text-sm font-medium text-slate-700 mb-1">
             Texto da Questão
@@ -165,40 +129,35 @@
             </select>
           </div>
 
-          <!-- Score (peso) -->
+          <!-- Item de avaliação -->
           <div>
-            <label for="score" class="block text-sm font-medium text-slate-700 mb-1">
-              Peso da questão (opcional)
+            <label for="item" class="block text-sm font-medium text-slate-700 mb-1">
+              Item de Avaliação
             </label>
-            <input
-              type="number"
-              id="score"
-              name="score"
-              min="1"
-              max="10"
-              placeholder="Ex.: 4"
-              class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm
-                     focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition" />
-            <p class="text-[11px] text-slate-400 mt-1">
-              Esse peso pode ser usado em cálculos posteriores. Se não souber, pode deixar em branco.
-            </p>
+            <select id="item" name="item" required
+                    class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm
+                           focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition bg-white">
+              <option value="">Selecione...</option>
+              <option th:each="i : ${itensAvaliacao}"
+                      th:value="${i}"
+                      th:text="${i.descricao}">Item</option>
+            </select>
           </div>
         </div>
 
-        <!-- Campos específicos de questão QUANTITATIVA -->
+        <!-- Bloco de alternativas quantitativas -->
         <div id="quant-fields" class="border border-slate-200 rounded-xl p-4 bg-slate-50 space-y-4">
           <p class="text-sm font-semibold text-slate-700">
             Alternativas (múltipla escolha)
           </p>
           <p class="text-xs text-slate-500">
-            As quatro primeiras alternativas são pontuadas como 1, 2, 3 e 4.
-            A quinta opção é opcional, geralmente usada como "Não sei opinar" (vale 0).
+            As alternativas serão avaliadas de 1 a 4, correspondendo a 25%, 50%, 75% e 100%.
           </p>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label for="option1Label" class="block text-xs font-medium text-slate-700 mb-1">
-                Alternativa 1 (vale 1)
+                Alternativa 1 (nota 1 / 25%)
               </label>
               <input
                 type="text"
@@ -211,7 +170,7 @@
 
             <div>
               <label for="option2Label" class="block text-xs font-medium text-slate-700 mb-1">
-                Alternativa 2 (vale 2)
+                Alternativa 2 (nota 2 / 50%)
               </label>
               <input
                 type="text"
@@ -224,7 +183,7 @@
 
             <div>
               <label for="option3Label" class="block text-xs font-medium text-slate-700 mb-1">
-                Alternativa 3 (vale 3)
+                Alternativa 3 (nota 3 / 75%)
               </label>
               <input
                 type="text"
@@ -237,7 +196,7 @@
 
             <div>
               <label for="option4Label" class="block text-xs font-medium text-slate-700 mb-1">
-                Alternativa 4 (vale 4)
+                Alternativa 4 (nota 4 / 100%)
               </label>
               <input
                 type="text"
@@ -251,7 +210,7 @@
 
           <div>
             <label for="option5Label" class="block text-xs font-medium text-slate-700 mb-1">
-              Alternativa 5 (opcional, vale 0)
+              Alternativa 5 (opcional, vale 0%)
             </label>
             <input
               type="text"
@@ -276,7 +235,6 @@
                   class="bg-red-700 text-white px-6 py-2.5 rounded-lg font-medium shadow-sm
                          hover:bg-red-800 focus:ring-2 focus:ring-red-500 focus:outline-none transition
                          inline-flex items-center gap-2 text-sm">
-            <!-- Ícone salvar -->
             <svg xmlns="http://www.w3.org/2000/svg"
                  class="h-4 w-4" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -311,7 +269,6 @@
 </footer>
 
 <script>
-  // Exibir/esconder bloco de alternativas quando muda o tipo
   document.addEventListener("DOMContentLoaded", function () {
     const typeSelect = document.getElementById("type");
     const quantFields = document.getElementById("quant-fields");
@@ -325,7 +282,7 @@
     }
 
     typeSelect.addEventListener("change", toggleQuantFields);
-    toggleQuantFields(); // inicial
+    toggleQuantFields();
   });
 </script>
 

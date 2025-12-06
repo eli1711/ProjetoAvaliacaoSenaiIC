@@ -14,7 +14,8 @@ public class Question {
     @Enumerated(EnumType.STRING)
     private QuestionType type;
 
-    private Integer score; // 0-5 para QUANTITATIVA
+    // 0-5 para QUANTITATIVA (mantido)
+    private Integer score;
 
     // labels das alternativas (múltipla escolha)
     private String option1Label; // ex: Discordo totalmente
@@ -27,7 +28,17 @@ public class Question {
     @JoinColumn(name = "questionnaire_id")
     private Questionnaire questionnaire;
 
-    // getters / setters ...
+    // NOVO: qual item de avaliação esta questão pertence
+    @Enumerated(EnumType.STRING)
+    @Column(name = "item_avaliacao", nullable = false)
+    private ItemAvaliacao itemAvaliacao;
+
+    // NOVO: grau de importância deste item dentro do modelo de questionário
+    @Enumerated(EnumType.STRING)
+    @Column(name = "grau_importancia_modelo", nullable = false)
+    private GrauImportancia grauImportanciaModelo;
+
+    // getters / setters
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -58,4 +69,12 @@ public class Question {
 
     public Questionnaire getQuestionnaire() { return questionnaire; }
     public void setQuestionnaire(Questionnaire questionnaire) { this.questionnaire = questionnaire; }
+
+    public ItemAvaliacao getItemAvaliacao() { return itemAvaliacao; }
+    public void setItemAvaliacao(ItemAvaliacao itemAvaliacao) { this.itemAvaliacao = itemAvaliacao; }
+
+    public GrauImportancia getGrauImportanciaModelo() { return grauImportanciaModelo; }
+    public void setGrauImportanciaModelo(GrauImportancia grauImportanciaModelo) {
+        this.grauImportanciaModelo = grauImportanciaModelo;
+    }
 }

@@ -61,12 +61,9 @@ public class QuestionnaireController {
 
     @GetMapping("/{id}/respond")
     public String respondQuestionnaire(@PathVariable Long id, Model model) {
-        // Mantemos APENAS como "preview" das perguntas, sem gravar respostas oficiais
         Questionnaire questionnaire = getQuestionnaireOrThrow(id);
         model.addAttribute("questionnaire", questionnaire);
         model.addAttribute("questions", questionRepository.findByQuestionnaireId(id));
-        // Você pode ter uma página só de visualização, sem form de envio,
-        // ou colocar um aviso "este questionário é apenas modelo".
         return "questionnaire/respond";
     }
 
@@ -76,8 +73,6 @@ public class QuestionnaireController {
                                       Principal principal,
                                       RedirectAttributes redirectAttributes) {
 
-        // NOVA REGRA: não salva mais respostas ligadas somente ao questionário.
-        // Se alguém bater aqui, apenas informa que o fluxo oficial é via Avaliação Aplicada.
         redirectAttributes.addFlashAttribute("error",
                 "Este questionário é um modelo. As respostas oficiais devem ser enviadas pela Avaliação Aplicada da sua turma.");
         return "redirect:/home";
@@ -85,7 +80,6 @@ public class QuestionnaireController {
 
     // =====================================================================
     //  VISUALIZAR RESPOSTAS DE UM QUESTIONÁRIO (MODO ADMIN / MODELO)
-    //  (opcionalmente, você pode manter para ver respostas "puras" antigas)
     // =====================================================================
 
     @GetMapping("/{id}/answers")
@@ -93,7 +87,6 @@ public class QuestionnaireController {
         Questionnaire questionnaire = getQuestionnaireOrThrow(id);
 
         var questions = questionRepository.findByQuestionnaireId(id);
-        // Só mostra respostas "puras" antigas, se ainda existirem:
         var answers = answerRepository.findByQuestionQuestionnaireIdAndRespostaAlunoIsNull(id);
 
         Map<Long, List<Answer>> answersByQuestion = new HashMap<>();
@@ -197,6 +190,10 @@ public class QuestionnaireController {
         Questionnaire questionnaire = getQuestionnaireOrThrow(id);
         model.addAttribute("questionnaire", questionnaire);
         model.addAttribute("question", new Question());
+
+        // popula o combo de "Item de Avaliação"
+        model.addAttribute("itensAvaliacao", ItemAvaliacao.values());
+
         return "questionnaire/add_question";
     }
 
@@ -204,6 +201,7 @@ public class QuestionnaireController {
     public String createQuestion(@PathVariable Long id,
                                  @RequestParam String text,
                                  @RequestParam String type,
+                                 @RequestParam ItemAvaliacao item,
                                  @RequestParam(required = false) Integer score,
                                  @RequestParam(required = false) String option1Label,
                                  @RequestParam(required = false) String option2Label,
@@ -216,6 +214,18 @@ public class QuestionnaireController {
 
         Question question = new Question();
         question.setText(text);
+
+        // Item de avaliação (vem do select)
+        question.setItemAvaliacao(item);
+
+        // Como o grau de importância agora é respondido pelo aluno,
+        // definimos um valor padrão interno apenas para satisfazer o banco.
+        // Se não precisar mais da coluna, você pode removê-la depois.
+        try {
+            question.setGrauImportanciaModelo(GrauImportancia.MEDIA);
+        } catch (Exception ignored) {
+            // se o atributo não existir na entidade Question, pode remover esse bloco
+        }
 
         try {
             QuestionType questionType =
@@ -255,6 +265,7 @@ public class QuestionnaireController {
                 }
 
             } else {
+                // qualitativa
                 question.setScore(null);
                 question.setOption1Label(null);
                 question.setOption2Label(null);
@@ -267,6 +278,7 @@ public class QuestionnaireController {
             model.addAttribute("error", "Tipo de questão inválido: " + type);
             model.addAttribute("questionnaire", questionnaire);
             model.addAttribute("question", question);
+            model.addAttribute("itensAvaliacao", ItemAvaliacao.values());
             return "questionnaire/add_question";
         }
 

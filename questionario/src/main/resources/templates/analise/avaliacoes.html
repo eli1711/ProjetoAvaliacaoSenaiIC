@@ -1,18 +1,15 @@
 <!DOCTYPE html>
-<html lang="pt"
-      xmlns:th="http://www.thymeleaf.org">
+<html lang="pt" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>Análise das Avaliações - CPA</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js para os gráficos de pizza -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body class="bg-gradient-to-br from-slate-100 to-red-100 min-h-screen flex flex-col font-sans">
 
-<!-- CABEÇALHO PADRÃO (vermelho SENAI) -->
 <header class="bg-red-700 text-white shadow">
   <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center gap-4">
     <a href="/home" class="font-semibold tracking-tight text-lg flex items-center gap-3">
@@ -42,7 +39,6 @@
       </form>
     </nav>
 
-    <!-- Versão mobile -->
     <div class="flex md:hidden items-center gap-2">
       <a href="/analise/avaliacoes"
          class="text-xs px-3 py-1.5 rounded-full bg-red-800 hover:bg-red-900 transition">
@@ -63,7 +59,6 @@
 <main class="flex-1">
   <div class="max-w-6xl mx-auto px-4 py-8">
 
-    <!-- TÍTULO + VOLTAR -->
     <div class="flex items-center justify-between mb-6">
       <div>
         <div class="inline-flex items-center gap-2 rounded-full bg-red-50 text-red-700 px-3 py-1 mb-2">
@@ -87,11 +82,9 @@
       </a>
     </div>
 
-    <!-- FILTROS -->
     <form method="get"
           class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4 bg-white border border-red-100 rounded-2xl p-4 shadow-sm">
 
-      <!-- Turma -->
       <div>
         <label class="block text-xs font-semibold text-slate-600 mb-1">Turma</label>
         <select name="turmaId"
@@ -105,7 +98,6 @@
         </select>
       </div>
 
-      <!-- Ano -->
       <div>
         <label class="block text-xs font-semibold text-slate-600 mb-1">Ano</label>
         <select name="ano"
@@ -119,7 +111,6 @@
         </select>
       </div>
 
-      <!-- Avaliação específica -->
       <div class="md:col-span-2">
         <label class="block text-xs font-semibold text-slate-600 mb-1">Avaliação aplicada</label>
         <select name="avaliacaoId"
@@ -127,7 +118,7 @@
           <option value="" th:selected="${selectedAvaliacaoId} == null">Todas</option>
           <option th:each="av : ${avaliacoes}"
                   th:value="${av.id}"
-                  th:selected="${selectedAvaliacaoId} != null and selectedAvaliacaoId == av.id"
+                  th:selected="${selectedAvaliacaoId != null and selectedAvaliacaoId == av.id}"
                   th:text="|[ID ${av.id}] ${av.turma.nome} - ${av.questionario.name} (${av.questionario.year})|">
           </option>
         </select>
@@ -152,7 +143,6 @@
           </button>
         </div>
 
-        <!-- Botões de exportação CSV -->
         <div class="flex flex-wrap gap-2">
           <a th:href="@{/analise/avaliacoes/export-resumo(
                           turmaId=${selectedTurmaId},
@@ -187,73 +177,181 @@
       </div>
     </form>
 
+    <!-- ===================================================== -->
+    <!-- RELATÓRIO POR ALUNO (IMPORTÂNCIA + RESPOSTA)           -->
+    <!-- ===================================================== -->
+    <div class="bg-white rounded-2xl border border-red-100 p-5 shadow-sm mb-8">
+      <h2 class="text-lg font-semibold text-slate-900 mb-3">
+        Relatório por aluno (importância + resposta)
+      </h2>
+
+      <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <input type="hidden" name="turmaId" th:value="${selectedTurmaId}">
+        <input type="hidden" name="ano" th:value="${selectedAno}">
+        <input type="hidden" name="avaliacaoId" th:value="${selectedAvaliacaoId}">
+
+        <div class="md:col-span-3">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Aluno (resposta enviada)</label>
+          <select name="respostaAlunoId"
+                  class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none bg-white">
+            <option value="" th:selected="${selectedRespostaAlunoId} == null">Selecione...</option>
+            <option th:each="ra : ${enviosDisponiveis}"
+                    th:value="${ra.id}"
+                    th:selected="${selectedRespostaAlunoId != null and selectedRespostaAlunoId == ra.id}"
+                    th:text="|${ra.aluno.ra} - ${ra.aluno.nome}  (Aval: ${ra.avaliacaoAplicada.id})|">
+            </option>
+          </select>
+          <p class="text-[11px] text-slate-400 mt-1">
+            O filtro lista alunos que responderam as avaliações dentro dos filtros acima.
+          </p>
+        </div>
+
+        <div class="md:col-span-1 flex items-end gap-2">
+          <button type="submit"
+                  class="w-full px-5 py-2 text-sm rounded-lg bg-red-700 text-white font-medium hover:bg-red-800 shadow-sm">
+            Ver aluno
+          </button>
+        </div>
+      </form>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5" th:if="${selectedRespostaAlunoId != null}">
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <p class="text-xs font-semibold text-slate-500 mb-1">Média do aluno (somente notas 1..4)</p>
+          <p class="text-2xl font-bold text-red-700"
+             th:text="${mediaAluno == null ? '-' : #numbers.formatDecimal(mediaAluno, 1, 2)}">-</p>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <p class="text-xs font-semibold text-slate-500 mb-1">Média do aluno (incluindo 0 se marcou opção 5)</p>
+          <p class="text-2xl font-bold text-slate-900"
+             th:text="${mediaAlunoComZero == null ? '-' : #numbers.formatDecimal(mediaAlunoComZero, 1, 2)}">-</p>
+        </div>
+      </div>
+
+      <div class="mt-5" th:if="${selectedRespostaAlunoId != null}">
+        <div th:if="${#lists.isEmpty(relatorioAluno)}" class="text-sm text-slate-600">
+          Nenhuma resposta encontrada para este aluno.
+        </div>
+
+        <div th:unless="${#lists.isEmpty(relatorioAluno)}" class="overflow-x-auto">
+          <table class="min-w-full text-xs border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+            <thead class="bg-slate-50">
+            <tr>
+              <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Item</th>
+              <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Pergunta</th>
+              <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Tipo</th>
+              <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Importância</th>
+              <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Resposta</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:each="r : ${relatorioAluno}" class="border-b border-slate-100 hover:bg-slate-50">
+              <!-- Item (blindado) -->
+              <td class="px-3 py-2"
+                  th:text="${r.item != null ? (r.item.descricao != null ? r.item.descricao : r.item) : '-'}">-</td>
+
+              <!-- Pergunta (já vem pronta no DTO) -->
+              <td class="px-3 py-2" th:text="${r.perguntaTexto != null ? r.perguntaTexto : '-'}">Pergunta</td>
+
+              <!-- Tipo -->
+              <td class="px-3 py-2" th:text="${r.tipo != null ? r.tipo : '-'}">QUANTITATIVA</td>
+
+              <!-- ✅ IMPORTÂNCIA -->
+<td class="px-3 py-2 align-top">
+  <div th:if="${#strings.toString(r.tipo) == 'QUANTITATIVA'}" class="space-y-1">
+
+    <label class="flex items-center gap-2 text-slate-800">
+      <input type="checkbox" disabled class="h-4 w-4 accent-red-600"
+             th:checked="${r.importanciaValor != null and r.importanciaValor == 1}" />
+      <span class="text-xs"><span class="font-semibold">1</span> <span class="text-slate-600">—</span> Baixa</span>
+    </label>
+
+    <label class="flex items-center gap-2 text-slate-800">
+      <input type="checkbox" disabled class="h-4 w-4 accent-red-600"
+             th:checked="${r.importanciaValor != null and r.importanciaValor == 2}" />
+      <span class="text-xs"><span class="font-semibold">2</span> <span class="text-slate-600">—</span> Média</span>
+    </label>
+
+    <label class="flex items-center gap-2 text-slate-800">
+      <input type="checkbox" disabled class="h-4 w-4 accent-red-600"
+             th:checked="${r.importanciaValor != null and r.importanciaValor == 3}" />
+      <span class="text-xs"><span class="font-semibold">3</span> <span class="text-slate-600">—</span> Alta</span>
+    </label>
+
+  
+
+  </div>
+
+  <div th:if="${#strings.toString(r.tipo) == 'QUALITATIVA'}" class="text-slate-400 text-xs">-</div>
+</td>
+
+              <!-- ✅ RESPOSTA (checklist preenchido) -->
+              <td class="px-3 py-2 align-top">
+                <div th:if="${#strings.toString(r.tipo) == 'QUANTITATIVA'}" class="space-y-1">
+                  <label class="flex items-center gap-2 text-slate-800">
+                    <input type="checkbox" disabled class="h-4 w-4 accent-red-600"
+                           th:checked="${#strings.toString(r.respostaNumero) == '1'}"/>
+                    <span class="text-xs"><span class="font-semibold">1</span> <span class="text-slate-600">—</span> <span th:text="${r.option1Label != null ? r.option1Label : '-'}">Opção 1</span></span>
+                  </label>
+
+                  <label class="flex items-center gap-2 text-slate-800">
+                    <input type="checkbox" disabled class="h-4 w-4 accent-red-600"
+                           th:checked="${#strings.toString(r.respostaNumero) == '2'}"/>
+                    <span class="text-xs"><span class="font-semibold">2</span> <span class="text-slate-600">—</span> <span th:text="${r.option2Label != null ? r.option2Label : '-'}">Opção 2</span></span>
+                  </label>
+
+                  <label class="flex items-center gap-2 text-slate-800">
+                    <input type="checkbox" disabled class="h-4 w-4 accent-red-600"
+                           th:checked="${#strings.toString(r.respostaNumero) == '3'}"/>
+                    <span class="text-xs"><span class="font-semibold">3</span> <span class="text-slate-600">—</span> <span th:text="${r.option3Label != null ? r.option3Label : '-'}">Opção 3</span></span>
+                  </label>
+
+                  <label class="flex items-center gap-2 text-slate-800">
+                    <input type="checkbox" disabled class="h-4 w-4 accent-red-600"
+                           th:checked="${#strings.toString(r.respostaNumero) == '4'}"/>
+                    <span class="text-xs"><span class="font-semibold">4</span> <span class="text-slate-600">—</span> <span th:text="${r.option4Label != null ? r.option4Label : '-'}">Opção 4</span></span>
+                  </label>
+
+                  <label class="flex items-center gap-2 text-slate-800">
+                    <input type="checkbox" disabled class="h-4 w-4 accent-red-600"
+                           th:checked="${#strings.toString(r.respostaNumero) == '0'}"/>
+                    <span class="text-xs"><span class="font-semibold">0</span> <span class="text-slate-600">—</span> <span th:text="${r.option5Label != null ? r.option5Label : 'N/A'}">N/A</span></span>
+                  </label>
+                </div>
+
+                <div th:if="${#strings.toString(r.tipo) == 'QUALITATIVA'}"
+                     class="text-slate-700 text-xs"
+                     th:text="${r.resposta != null ? r.resposta : '-'}">
+                  texto...
+                </div>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- CARDS RESUMO -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
       <div class="bg-white rounded-2xl border border-red-100 p-4 shadow-sm">
         <p class="text-xs font-semibold text-slate-500 mb-1">Avaliações consideradas</p>
-        <p class="text-2xl font-bold text-slate-900"
-           th:text="${qtdAvaliacoesConsideradas}">0</p>
+        <p class="text-2xl font-bold text-slate-900" th:text="${qtdAvaliacoesConsideradas}">0</p>
       </div>
 
       <div class="bg-white rounded-2xl border border-red-100 p-4 shadow-sm">
         <p class="text-xs font-semibold text-slate-500 mb-1">Total de respostas</p>
-        <p class="text-2xl font-bold text-slate-900"
-           th:text="${totalRespostas}">0</p>
+        <p class="text-2xl font-bold text-slate-900" th:text="${totalRespostas}">0</p>
       </div>
 
       <div class="bg-white rounded-2xl border border-red-100 p-4 shadow-sm">
         <p class="text-xs font-semibold text-slate-500 mb-1">Média global (questões quantitativas)</p>
         <p class="text-2xl font-bold text-red-700"
-           th:text="${mediaQuantitativa == null ? '-' : #numbers.formatDecimal(mediaQuantitativa, 1, 2)}">
-          -
-        </p>
+           th:text="${mediaQuantitativa == null ? '-' : #numbers.formatDecimal(mediaQuantitativa, 1, 2)}">-</p>
       </div>
     </div>
 
-    <!-- RESUMO POR AVALIAÇÃO (SOMA + MÉDIA) -->
-    <div class="bg-white rounded-2xl border border-red-100 p-5 shadow-sm mb-8">
-      <h2 class="text-lg font-semibold text-slate-900 mb-3">
-        Resumo por avaliação (quantitativas)
-      </h2>
-
-      <div th:if="${#lists.isEmpty(avaliacoesFiltradas)}"
-           class="text-sm text-slate-600">
-        Nenhuma avaliação encontrada com os filtros selecionados.
-      </div>
-
-      <div th:unless="${#lists.isEmpty(avaliacoesFiltradas)}" class="overflow-x-auto">
-        <table class="min-w-full text-xs border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-          <thead class="bg-slate-50">
-          <tr>
-            <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">ID</th>
-            <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Turma</th>
-            <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Questionário</th>
-            <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Ano</th>
-            <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Soma das notas</th>
-            <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Média das notas</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr th:each="av : ${avaliacoesFiltradas}">
-            <td class="px-3 py-2 border-b border-slate-100" th:text="${av.id}">1</td>
-            <td class="px-3 py-2 border-b border-slate-100" th:text="${av.turma.nome}">Turma</td>
-            <td class="px-3 py-2 border-b border-slate-100" th:text="${av.questionario.name}">Questionário</td>
-            <td class="px-3 py-2 border-b border-slate-100" th:text="${av.questionario.year}">2025</td>
-            <td class="px-3 py-2 border-b border-slate-100"
-                th:text="${somaNotasAvaliacao[av.id] != null ? somaNotasAvaliacao[av.id] : 0}">
-              0
-            </td>
-            <td class="px-3 py-2 border-b border-slate-100"
-                th:text="${mediaNotasAvaliacao[av.id] == null ? '-' : #numbers.formatDecimal(mediaNotasAvaliacao[av.id], 1, 2)}">
-              -
-            </td>
-          </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- LISTA DE PERGUNTAS QUANTITATIVAS + GRÁFICO DE PIZZA -->
     <div class="space-y-4 mb-10">
       <h2 class="text-lg font-semibold text-slate-900 mb-2">
         Distribuição por pergunta (quantitativas)
@@ -267,12 +365,10 @@
       <div th:each="entry : ${distribuicaoPorPergunta}"
            class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"
            data-chart-block>
+
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
           <div>
-            <p class="text-sm font-semibold text-slate-900"
-               th:text="${entry.key.text}">
-              Texto da pergunta
-            </p>
+            <p class="text-sm font-semibold text-slate-900" th:text="${entry.key.text}">Texto da pergunta</p>
             <p class="text-xs text-slate-500 mt-1"
                th:text="|Questionário: ${entry.key.questionnaire.name} (${entry.key.questionnaire.year})|">
               Questionário
@@ -281,20 +377,14 @@
           <div class="text-right">
             <p class="text-xs text-slate-500">Total de respostas</p>
             <p class="text-base font-semibold text-slate-900"
-               th:text="${totalRespostasPergunta[entry.key] != null ? totalRespostasPergunta[entry.key] : 0}">
-              0
-            </p>
+               th:text="${totalRespostasPergunta[entry.key] != null ? totalRespostasPergunta[entry.key] : 0}">0</p>
             <p class="text-xs text-slate-500 mt-1">Média</p>
             <p class="text-base font-semibold text-red-700"
-               th:text="${mediaPergunta[entry.key] == null ? '-' : #numbers.formatDecimal(mediaPergunta[entry.key], 1, 2)}">
-              -
-            </p>
+               th:text="${mediaPergunta[entry.key] == null ? '-' : #numbers.formatDecimal(mediaPergunta[entry.key], 1, 2)}">-</p>
           </div>
         </div>
 
-        <!-- Tabela + Gráfico lado a lado -->
         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-          <!-- Tabela de distribuição (nota x quantidade x alternativa) -->
           <div class="overflow-x-auto" data-chart-table>
             <table class="min-w-full text-xs border border-slate-200 rounded-lg overflow-hidden">
               <thead class="bg-slate-50">
@@ -306,13 +396,7 @@
               </thead>
               <tbody>
               <tr th:each="notaEntry : ${entry.value}">
-                <!-- Nota numérica -->
-                <td class="px-3 py-2 border-b border-slate-100"
-                    th:text="${notaEntry.key}">
-                  0
-                </td>
-
-                <!-- Texto da alternativa correspondente -->
+                <td class="px-3 py-2 border-b border-slate-100" th:text="${notaEntry.key}">0</td>
                 <td class="px-3 py-2 border-b border-slate-100"
                     th:text="${
                       notaEntry.key == 1 ? entry.key.option1Label :
@@ -320,34 +404,22 @@
                       (notaEntry.key == 3 ? entry.key.option3Label :
                       (notaEntry.key == 4 ? entry.key.option4Label :
                       (notaEntry.key == 0 ? entry.key.option5Label : '-'))))
-                    }">
-                  Alternativa
-                </td>
-
-                <!-- Quantidade de respostas -->
-                <td class="px-3 py-2 border-b border-slate-100"
-                    th:text="${notaEntry.value}">
-                  0
-                </td>
+                    }">Alternativa</td>
+                <td class="px-3 py-2 border-b border-slate-100" th:text="${notaEntry.value}">0</td>
               </tr>
               </tbody>
             </table>
           </div>
 
-          <!-- Gráfico de pizza (bem menor e redondo) -->
           <div class="flex items-center justify-center">
             <div class="w-24 sm:w-32 aspect-square">
-              <canvas
-                class="w-full h-full"
-                data-chart-canvas>
-              </canvas>
+              <canvas class="w-full h-full" data-chart-canvas></canvas>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- RESPOSTAS QUALITATIVAS -->
     <div class="space-y-4 mb-8">
       <h2 class="text-lg font-semibold text-slate-900 mb-2">
         Respostas qualitativas (texto dos alunos)
@@ -360,8 +432,7 @@
 
       <div th:each="entry : ${respostasQualitativasPorPergunta}"
            class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-        <p class="text-sm font-semibold text-slate-900 mb-2"
-           th:text="${entry.key.text}">
+        <p class="text-sm font-semibold text-slate-900 mb-2" th:text="${entry.key.text}">
           Texto da pergunta qualitativa
         </p>
 
@@ -383,7 +454,6 @@
   </div>
 </footer>
 
-<!-- SCRIPT: monta gráficos de pizza a partir das tabelas -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const blocks = document.querySelectorAll("[data-chart-block]");
@@ -404,8 +474,8 @@
         const cells = row.querySelectorAll("td");
         if (cells.length < 3) return;
 
-        const nota = cells[0].innerText.trim();       // Nota (0,1,2,3,4)
-        const qtdText = cells[2].innerText.trim();    // Quantidade
+        const nota = cells[0].innerText.trim();
+        const qtdText = cells[2].innerText.trim();
         const qtd = parseInt(qtdText, 10);
 
         if (!isNaN(qtd) && qtd > 0) {
@@ -422,13 +492,7 @@
           labels: labels,
           datasets: [{
             data: data,
-            backgroundColor: [
-              "#ef4444", // red-500
-              "#f97316", // orange-500
-              "#eab308", // yellow-500
-              "#22c55e", // green-500
-              "#3b82f6"  // blue-500
-            ],
+            backgroundColor: ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6"],
             borderColor: "#ffffff",
             borderWidth: 1
           }]
@@ -437,12 +501,7 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: {
-              position: "bottom",
-              labels: {
-                font: { size: 11 }
-              }
-            },
+            legend: { position: "bottom", labels: { font: { size: 11 } } },
             tooltip: {
               callbacks: {
                 label: function (context) {

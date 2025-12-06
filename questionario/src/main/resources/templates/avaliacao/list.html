@@ -180,7 +180,7 @@
                 <form th:action="@{/avaliacoes/{id}/delete(id=${a.id})}"
                       method="post"
                       class="inline form-excluir-avaliacao"
-                      th:attr="data-questionario=${a.questionario.name}">
+                      th:attr="data-questionario=${a.questionario.name}, data-avaliacao-id=${a.id}">
                   <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
                   <button type="submit"
                           class="inline-block bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-700 transition">
@@ -221,21 +221,71 @@
   </div>
 </footer>
 
-<!-- CONFIRMAÇÃO AO APAGAR AVALIAÇÃO -->
+<!-- BAIXAR CSV ANTES DE APAGAR -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const forms = document.querySelectorAll(".form-excluir-avaliacao");
 
-    forms.forEach(function (form) {
-      form.addEventListener("submit", function (e) {
-        const nomeQuestionario = form.getAttribute("data-questionario") || "esta avaliação";
-        const msg = "Tem certeza de que deseja apagar a avaliação:\n\n"
-          + "   \"" + nomeQuestionario + "\"?\n\n"
-          + "Esta ação irá apagar também TODAS as respostas vinculadas "
-          + "e não poderá ser desfeita.";
+    async function baixarCsv(avaliacaoId) {
+      const r = await fetch(`/avaliacoes/${avaliacaoId}/csv-template`, {
+        method: "GET",
+        headers: { "Accept": "text/csv" }
+      });
 
-        if (!confirm(msg)) {
-          e.preventDefault();
+      if (!r.ok) {
+        throw new Error("Não foi possível baixar o CSV. A avaliação NÃO será apagada.");
+      }
+
+      const blob = await r.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `avaliacao-${avaliacaoId}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    }
+
+    forms.forEach(function (form) {
+      form.addEventListener("submit", async function (e) {
+        e.preventDefault(); // interrompe o delete até baixarmos o CSV
+
+        const nomeQuestionario = form.getAttribute("data-questionario") || "esta avaliação";
+        const avaliacaoId = form.getAttribute("data-avaliacao-id");
+
+        const msg = "Antes de apagar, vou baixar o CSV.\n\n"
+          + "Tem certeza de que deseja apagar a avaliação:\n\n"
+          + "   \"" + nomeQuestionario + "\"?\n\n"
+          + "Esta ação apaga também TODAS as respostas vinculadas e não poderá ser desfeita.";
+
+        if (!confirm(msg)) return;
+
+        // desabilita o botão pra evitar double-click
+        const btn = form.querySelector("button[type='submit']");
+        const oldText = btn ? btn.textContent : null;
+        if (btn) {
+          btn.disabled = true;
+          btn.classList.add("opacity-60", "cursor-not-allowed");
+          btn.textContent = "Baixando...";
+        }
+
+        try {
+          await baixarCsv(avaliacaoId);
+
+          if (btn) btn.textContent = "Apagando...";
+
+          // agora sim: executa o POST do form (com CSRF)
+          form.submit();
+        } catch (err) {
+          alert(err && err.message ? err.message : "Erro inesperado ao baixar o CSV.");
+          if (btn) {
+            btn.disabled = false;
+            btn.classList.remove("opacity-60", "cursor-not-allowed");
+            btn.textContent = oldText || "Apagar";
+          }
         }
       });
     });
