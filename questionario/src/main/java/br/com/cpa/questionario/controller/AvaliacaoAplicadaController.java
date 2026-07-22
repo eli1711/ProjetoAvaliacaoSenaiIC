@@ -3,6 +3,8 @@ package br.com.cpa.questionario.controller;
 import br.com.cpa.questionario.model.*;
 import br.com.cpa.questionario.repository.*;
 import br.com.cpa.questionario.service.AvaliacaoEmailService;
+import br.com.cpa.questionario.service.InstituicaoScopeService;
+import br.com.cpa.questionario.service.QuestionnaireVersioningService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,6 +34,9 @@ public class AvaliacaoAplicadaController {
     private final UserRepository userRepository;
     private final AvaliacaoEmailService avaliacaoEmailService;
     private final AlunoRepository alunoRepository;
+    private final InstituicaoScopeService instituicaoScopeService;
+    private final ParticipacaoAvaliacaoRepository participacaoAvaliacaoRepository;
+    private final QuestionnaireVersioningService questionnaireVersioningService;
 
     // existente (por ITEM)
     private final ImportanciaItemRespostaRepository importanciaItemRespostaRepository;
@@ -48,6 +53,9 @@ public class AvaliacaoAplicadaController {
                                        UserRepository userRepository,
                                        AvaliacaoEmailService avaliacaoEmailService,
                                        AlunoRepository alunoRepository,
+                                       InstituicaoScopeService instituicaoScopeService,
+                                       ParticipacaoAvaliacaoRepository participacaoAvaliacaoRepository,
+                                       QuestionnaireVersioningService questionnaireVersioningService,
                                        ImportanciaItemRespostaRepository importanciaItemRespostaRepository,
                                        ImportanciaQuestaoRespostaRepository importanciaQuestaoRespostaRepository) {
         this.avaliacaoAplicadaRepository = avaliacaoAplicadaRepository;
@@ -59,6 +67,9 @@ public class AvaliacaoAplicadaController {
         this.userRepository = userRepository;
         this.avaliacaoEmailService = avaliacaoEmailService;
         this.alunoRepository = alunoRepository;
+        this.instituicaoScopeService = instituicaoScopeService;
+        this.participacaoAvaliacaoRepository = participacaoAvaliacaoRepository;
+        this.questionnaireVersioningService = questionnaireVersioningService;
         this.importanciaItemRespostaRepository = importanciaItemRespostaRepository;
         this.importanciaQuestaoRespostaRepository = importanciaQuestaoRespostaRepository;
     }
@@ -68,7 +79,9 @@ public class AvaliacaoAplicadaController {
     // ============================================================
     @GetMapping
     public String list(Model model) {
-        List<AvaliacaoAplicada> avaliacoes = avaliacaoAplicadaRepository.findAll();
+        List<AvaliacaoAplicada> avaliacoes = instituicaoScopeService.getInstituicaoAtual()
+                .map(instituicao -> avaliacaoAplicadaRepository.findByInstituicaoId(instituicao.getId()))
+                .orElseGet(avaliacaoAplicadaRepository::findAll);
 
         // Atualiza status automaticamente (ABERTA -> ENCERRADA) se dataFim já passou
         LocalDateTime agora = LocalDateTime.now();
@@ -110,8 +123,14 @@ public class AvaliacaoAplicadaController {
         List<AvaliacaoAplicada> disponiveis = List.of();
 
         if (aluno.getTurma() != null) {
-            disponiveis = avaliacaoAplicadaRepository
-                    .findByTurmaIdAndStatus(aluno.getTurma().getId(), StatusAvaliacao.ABERTA);
+            if (aluno.getInstituicao() != null) {
+                disponiveis = avaliacaoAplicadaRepository
+                        .findByTurmaIdAndStatusAndInstituicaoId(
+                                aluno.getTurma().getId(), StatusAvaliacao.ABERTA, aluno.getInstituicao().getId());
+            } else {
+                disponiveis = avaliacaoAplicadaRepository
+                        .findByTurmaIdAndStatus(aluno.getTurma().getId(), StatusAvaliacao.ABERTA);
+            }
 
             LocalDateTime agora = LocalDateTime.now();
 
@@ -120,7 +139,7 @@ public class AvaliacaoAplicadaController {
                     .filter(a -> (a.getDataInicio() == null || !agora.isBefore(a.getDataInicio())) &&
                                  (a.getDataFim() == null || !agora.isAfter(a.getDataFim())))
                     // 2) ainda não respondeu
-                    .filter(a -> !respostaAlunoRepository.existsByAlunoAndAvaliacaoAplicada(aluno, a))
+                    .filter(a -> !jaRespondeu(aluno, a))
                     .toList();
         }
 
@@ -135,8 +154,8 @@ public class AvaliacaoAplicadaController {
     @GetMapping("/new")
     public String newAvaliacao(Model model) {
         model.addAttribute("avaliacao", new AvaliacaoAplicada());
-        model.addAttribute("turmas", turmaRepository.findAll());
-        model.addAttribute("questionnaires", questionnaireRepository.findAll());
+        model.addAttribute("turmas", getTurmasPermitidas());
+        model.addAttribute("questionnaires", getQuestionariosPermitidos());
         return "avaliacao/edit";
     }
 
@@ -157,10 +176,15 @@ public class AvaliacaoAplicadaController {
                 .orElseThrow(() -> new IllegalArgumentException("Turma não encontrada"));
         Questionnaire questionnaire = questionnaireRepository.findById(questionnaireId)
                 .orElseThrow(() -> new IllegalArgumentException("Questionário não encontrado"));
+        instituicaoScopeService.validarAcesso(turma.getInstituicao());
+        instituicaoScopeService.validarAcesso(questionnaire.getInstituicao());
+        validarMesmoEscopo(turma, questionnaire);
+        Questionnaire questionarioPublicado = questionnaireVersioningService.criarVersaoPublicada(questionnaire);
 
         AvaliacaoAplicada avaliacao = new AvaliacaoAplicada();
         avaliacao.setTurma(turma);
-        avaliacao.setQuestionario(questionnaire);
+        avaliacao.setQuestionario(questionarioPublicado);
+        avaliacao.setInstituicao(instituicaoScopeService.instituicaoParaNovoRegistro(turma.getInstituicao()));
         avaliacao.setDataInicio(dataInicio);
         avaliacao.setDataFim(dataFim);
         avaliacao.setStatus(StatusAvaliacao.ABERTA);
@@ -181,10 +205,11 @@ public class AvaliacaoAplicadaController {
     public String editAvaliacao(@PathVariable Long id, Model model) {
         AvaliacaoAplicada avaliacao = avaliacaoAplicadaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Avaliação não encontrada"));
+        instituicaoScopeService.validarAcesso(avaliacao.getInstituicao());
 
         model.addAttribute("avaliacao", avaliacao);
-        model.addAttribute("turmas", turmaRepository.findAll());
-        model.addAttribute("questionnaires", questionnaireRepository.findAll());
+        model.addAttribute("turmas", getTurmasPermitidas());
+        model.addAttribute("questionnaires", getQuestionariosPermitidos());
 
         return "avaliacao/edit";
     }
@@ -203,14 +228,20 @@ public class AvaliacaoAplicadaController {
 
         AvaliacaoAplicada avaliacao = avaliacaoAplicadaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Avaliação não encontrada"));
+        instituicaoScopeService.validarAcesso(avaliacao.getInstituicao());
 
         Turma turma = turmaRepository.findById(turmaId)
                 .orElseThrow(() -> new IllegalArgumentException("Turma não encontrada"));
         Questionnaire questionnaire = questionnaireRepository.findById(questionnaireId)
                 .orElseThrow(() -> new IllegalArgumentException("Questionário não encontrado"));
+        instituicaoScopeService.validarAcesso(turma.getInstituicao());
+        instituicaoScopeService.validarAcesso(questionnaire.getInstituicao());
+        validarMesmoEscopo(turma, questionnaire);
+        Questionnaire questionarioPublicado = obterQuestionarioPublicadoParaAtualizacao(avaliacao, questionnaire);
 
         avaliacao.setTurma(turma);
-        avaliacao.setQuestionario(questionnaire);
+        avaliacao.setQuestionario(questionarioPublicado);
+        avaliacao.setInstituicao(instituicaoScopeService.instituicaoParaNovoRegistro(turma.getInstituicao()));
         avaliacao.setDataInicio(dataInicio);
         avaliacao.setDataFim(dataFim);
         avaliacao.setStatus(status);
@@ -230,6 +261,7 @@ public class AvaliacaoAplicadaController {
 
         AvaliacaoAplicada avaliacao = avaliacaoAplicadaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Avaliação não encontrada"));
+        instituicaoScopeService.validarAcesso(avaliacao.getInstituicao());
 
         try {
             // 1) Gera CSV com as respostas desta avaliação
@@ -266,8 +298,8 @@ public class AvaliacaoAplicadaController {
             String turmaNome = avaliacao.getTurma() != null ? avaliacao.getTurma().getNome() : "";
             String questionarioNome = avaliacao.getQuestionario() != null ? avaliacao.getQuestionario().getName() : "";
 
-            String alunoRa = aluno != null ? aluno.getRa() : "";
-            String alunoNome = aluno != null ? aluno.getNome() : "";
+            String alunoRa = (ra.isAnonima() || aluno == null) ? "ANONIMO" : aluno.getRa();
+            String alunoNome = (ra.isAnonima() || aluno == null) ? "ANONIMO" : aluno.getNome();
             String dataRespostaStr = ra.getDataResposta() != null ? ra.getDataResposta().toString() : "";
 
             List<Answer> answers = ra.getRespostas();
@@ -327,6 +359,7 @@ public class AvaliacaoAplicadaController {
     public String responder(@PathVariable Long id, Model model) {
         AvaliacaoAplicada avaliacao = avaliacaoAplicadaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Avaliação não encontrada"));
+        instituicaoScopeService.validarAcesso(avaliacao.getInstituicao());
 
         User user = getCurrentUser();
         if (user == null) {
@@ -339,8 +372,14 @@ public class AvaliacaoAplicadaController {
             model.addAttribute("error", "Seu usuário não está vinculado a um registro de aluno.");
             return "avaliacao/ja_respondida";
         }
+        try {
+            validarAlunoPodeResponder(aluno, avaliacao);
+        } catch (IllegalStateException ex) {
+            model.addAttribute("error", ex.getMessage());
+            return "avaliacao/ja_respondida";
+        }
 
-        if (respostaAlunoRepository.existsByAlunoAndAvaliacaoAplicada(aluno, avaliacao)) {
+        if (jaRespondeu(aluno, avaliacao)) {
             model.addAttribute("error", "Você já respondeu esta avaliação.");
             return "avaliacao/ja_respondida";
         }
@@ -365,6 +404,7 @@ public class AvaliacaoAplicadaController {
 
         AvaliacaoAplicada avaliacao = avaliacaoAplicadaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Avaliação não encontrada"));
+        instituicaoScopeService.validarAcesso(avaliacao.getInstituicao());
 
         User user = getCurrentUser();
         if (user == null) {
@@ -378,8 +418,14 @@ public class AvaliacaoAplicadaController {
                     "Seu usuário não está vinculado a um registro de aluno.");
             return "redirect:/avaliacoes/" + id + "/responder";
         }
+        try {
+            validarAlunoPodeResponder(aluno, avaliacao);
+        } catch (IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            return "redirect:/avaliacoes/disponiveis";
+        }
 
-        if (respostaAlunoRepository.existsByAlunoAndAvaliacaoAplicada(aluno, avaliacao)) {
+        if (jaRespondeu(aluno, avaliacao)) {
             redirectAttributes.addFlashAttribute("error", "Você já respondeu esta avaliação.");
             return "redirect:/avaliacoes/" + id + "/responder";
         }
@@ -409,12 +455,26 @@ public class AvaliacaoAplicadaController {
             }
         }
 
-        // 1) Cria RespostaAluno
+        ParticipacaoAvaliacao participacao = participacaoAvaliacaoRepository
+                .findByAlunoAndAvaliacaoAplicada(aluno, avaliacao)
+                .orElseGet(() -> {
+                    ParticipacaoAvaliacao nova = new ParticipacaoAvaliacao();
+                    nova.setAluno(aluno);
+                    nova.setAvaliacaoAplicada(avaliacao);
+                    nova.setStatus(StatusResposta.PENDENTE);
+                    return nova;
+                });
+
+        boolean anonima = avaliacao.isAnonima();
+
+        // 1) Cria o envelope de respostas. Em avaliacao anonima, nao grava aluno.
         RespostaAluno respostaAluno = new RespostaAluno();
-        respostaAluno.setAluno(aluno);
+        respostaAluno.setAluno(anonima ? null : aluno);
         respostaAluno.setAvaliacaoAplicada(avaliacao);
         respostaAluno.setDataResposta(LocalDateTime.now());
         respostaAluno.setStatusResposta(StatusResposta.RESPONDIDO);
+        respostaAluno.setAnonima(anonima);
+        respostaAluno.setCodigoAnonimo(UUID.randomUUID().toString());
 
         RespostaAluno respostaAlunoSalvo = respostaAlunoRepository.save(respostaAluno);
 
@@ -434,7 +494,7 @@ public class AvaliacaoAplicadaController {
             a.setQuestion(question);
             a.setResponse(value);
             a.setRespostaAluno(respostaAlunoSalvo);
-            a.setUserUsername(user.getUsername());
+            a.setUserUsername(anonima ? null : user.getUsername());
             answerRepository.save(a);
 
             // NOVO: se for QUANTITATIVA, salvar importância por questão
@@ -458,6 +518,10 @@ public class AvaliacaoAplicadaController {
             importanciaItemRespostaRepository.save(imp);
         });
 
+        participacao.setStatus(StatusResposta.RESPONDIDO);
+        participacao.setDataConclusao(LocalDateTime.now());
+        participacaoAvaliacaoRepository.save(participacao);
+
         redirectAttributes.addFlashAttribute("success", "Respostas enviadas com sucesso!");
         return "redirect:/home";
     }
@@ -469,6 +533,7 @@ public class AvaliacaoAplicadaController {
     public String verRespostasAvaliacao(@PathVariable Long id, Model model) {
         AvaliacaoAplicada avaliacao = avaliacaoAplicadaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Avaliação não encontrada"));
+        instituicaoScopeService.validarAcesso(avaliacao.getInstituicao());
 
         Questionnaire questionnaire = avaliacao.getQuestionario();
         var questions = questionRepository.findByQuestionnaireId(questionnaire.getId());
@@ -551,5 +616,68 @@ public class AvaliacaoAplicadaController {
             return null;
         }
         return userRepository.findByUsername(auth.getName());
+    }
+
+    private List<Turma> getTurmasPermitidas() {
+        return instituicaoScopeService.getInstituicaoAtual()
+                .map(instituicao -> turmaRepository.findByInstituicaoId(instituicao.getId()))
+                .orElseGet(turmaRepository::findAll);
+    }
+
+    private List<Questionnaire> getQuestionariosPermitidos() {
+        return instituicaoScopeService.getInstituicaoAtual()
+                .map(instituicao -> questionnaireRepository.findModelosEditaveisByStatusAndInstituicaoId(
+                        StatusDisponibilidade.DISPONIVEL, instituicao.getId()))
+                .orElseGet(() -> questionnaireRepository.findModelosEditaveisByStatus(StatusDisponibilidade.DISPONIVEL));
+    }
+
+    private void validarMesmoEscopo(Turma turma, Questionnaire questionnaire) {
+        if (turma.getInstituicao() == null || questionnaire.getInstituicao() == null) {
+            return;
+        }
+        if (!turma.getInstituicao().getId().equals(questionnaire.getInstituicao().getId())) {
+            throw new IllegalArgumentException("Turma e questionario pertencem a instituicoes diferentes.");
+        }
+    }
+
+    private Questionnaire obterQuestionarioPublicadoParaAtualizacao(AvaliacaoAplicada avaliacao,
+                                                                    Questionnaire selecionado) {
+        Questionnaire atual = avaliacao.getQuestionario();
+        if (atual != null && atual.isBloqueado()) {
+            boolean mesmoModeloBase = Objects.equals(atual.getQuestionarioBaseId(), selecionado.getId());
+            boolean mesmaVersaoPublicada = Objects.equals(atual.getId(), selecionado.getId());
+            if (mesmoModeloBase || mesmaVersaoPublicada) {
+                return atual;
+            }
+        }
+        return questionnaireVersioningService.criarVersaoPublicada(selecionado);
+    }
+
+    private void validarAlunoPodeResponder(Aluno aluno, AvaliacaoAplicada avaliacao) {
+        if (avaliacao.getStatus() != StatusAvaliacao.ABERTA) {
+            throw new IllegalStateException("Esta avaliacao nao esta aberta para respostas.");
+        }
+
+        LocalDateTime agora = LocalDateTime.now();
+        if (avaliacao.getDataInicio() != null && agora.isBefore(avaliacao.getDataInicio())) {
+            throw new IllegalStateException("Esta avaliacao ainda nao iniciou.");
+        }
+        if (avaliacao.getDataFim() != null && agora.isAfter(avaliacao.getDataFim())) {
+            throw new IllegalStateException("Esta avaliacao ja foi encerrada.");
+        }
+        if (aluno.getTurma() == null || avaliacao.getTurma() == null
+                || !aluno.getTurma().getId().equals(avaliacao.getTurma().getId())) {
+            throw new IllegalStateException("Esta avaliacao nao esta disponivel para a sua turma.");
+        }
+        if (aluno.getInstituicao() != null && avaliacao.getInstituicao() != null
+                && !aluno.getInstituicao().getId().equals(avaliacao.getInstituicao().getId())) {
+            throw new IllegalStateException("Esta avaliacao pertence a outra instituicao.");
+        }
+    }
+
+    private boolean jaRespondeu(Aluno aluno, AvaliacaoAplicada avaliacao) {
+        return participacaoAvaliacaoRepository.existsByAlunoAndAvaliacaoAplicadaAndStatus(
+                aluno, avaliacao, StatusResposta.RESPONDIDO)
+                || respostaAlunoRepository.existsByAlunoAndAvaliacaoAplicada(aluno, avaliacao);
     }
 }

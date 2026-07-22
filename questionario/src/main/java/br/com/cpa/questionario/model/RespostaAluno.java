@@ -12,7 +12,7 @@ public class RespostaAluno {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     @JoinColumn(name = "aluno_id")
     private Aluno aluno;
 
@@ -24,6 +24,11 @@ public class RespostaAluno {
 
     @Enumerated(EnumType.STRING)
     private StatusResposta status = StatusResposta.RESPONDIDO;
+
+    private Boolean anonima = Boolean.TRUE;
+
+    @Column(name = "codigo_anonimo", length = 64)
+    private String codigoAnonimo;
 
     @OneToMany(mappedBy = "respostaAluno", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Answer> respostas = new ArrayList<>();
@@ -50,6 +55,12 @@ public class RespostaAluno {
 
     public StatusResposta getStatus() { return status; }
     public void setStatusResposta(StatusResposta status) { this.status = status; }
+
+    public boolean isAnonima() { return Boolean.TRUE.equals(anonima); }
+    public void setAnonima(boolean anonima) { this.anonima = anonima; }
+
+    public String getCodigoAnonimo() { return codigoAnonimo; }
+    public void setCodigoAnonimo(String codigoAnonimo) { this.codigoAnonimo = codigoAnonimo; }
 
     public List<Answer> getRespostas() { return respostas; }
     public void setRespostas(List<Answer> respostas) { this.respostas = respostas; }

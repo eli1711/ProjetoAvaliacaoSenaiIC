@@ -98,6 +98,7 @@ public class AvaliacaoImportacaoService {
                     respostaAluno.setAvaliacaoAplicada(avaliacao);
                     respostaAluno.setDataResposta(LocalDateTime.now());
                     respostaAluno.setStatusResposta(StatusResposta.RESPONDIDO);
+                    respostaAluno.setAnonima(false);
                     respostaAluno.setRespostas(new ArrayList<>());
 
                     // precisa salvar para ter ID (Importancia* usa resposta_aluno_id)

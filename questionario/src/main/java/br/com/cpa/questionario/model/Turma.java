@@ -16,6 +16,10 @@ public class Turma {
     private int semestre;
     private int ano;
 
+    @ManyToOne
+    @JoinColumn(name = "instituicao_id")
+    private Instituicao instituicao;
+
     // Agora a turma tem uma lista de Aluno, não de User
     @OneToMany(mappedBy = "turma")
     private List<Aluno> alunos;
@@ -66,5 +70,13 @@ public class Turma {
 
     public void setAlunos(List<Aluno> alunos) {
         this.alunos = alunos;
+    }
+
+    public Instituicao getInstituicao() {
+        return instituicao;
+    }
+
+    public void setInstituicao(Instituicao instituicao) {
+        this.instituicao = instituicao;
     }
 }

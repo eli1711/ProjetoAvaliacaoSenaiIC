@@ -35,6 +35,10 @@ public class Aluno {
     @JoinColumn(name = "turma_id")
     private Turma turma;
 
+    @ManyToOne
+    @JoinColumn(name = "instituicao_id")
+    private Instituicao instituicao;
+
     // ========= GETTERS / SETTERS =========
 
     public Long getId() {
@@ -91,5 +95,13 @@ public class Aluno {
 
     public void setTurma(Turma turma) {
         this.turma = turma;
+    }
+
+    public Instituicao getInstituicao() {
+        return instituicao;
+    }
+
+    public void setInstituicao(Instituicao instituicao) {
+        this.instituicao = instituicao;
     }
 }

@@ -18,7 +18,7 @@ public class Answer {
     private Question question;
 
     // username do usuário que respondeu (serve tanto para questionário direto quanto para avaliação aplicada)
-    @Column(name = "user_username", nullable = false)
+    @Column(name = "user_username")
     private String userUsername;
 
     // se a resposta veio de uma AvaliacaoAplicada, este campo terá valor

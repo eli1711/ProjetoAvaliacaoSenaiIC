@@ -1,8 +1,11 @@
 package br.com.cpa.questionario.controller;
 
 import br.com.cpa.questionario.model.Answer;
+import br.com.cpa.questionario.model.AvaliacaoAplicada;
 import br.com.cpa.questionario.model.RespostaAluno;
+import br.com.cpa.questionario.repository.AvaliacaoAplicadaRepository;
 import br.com.cpa.questionario.repository.RespostaAlunoRepository;
+import br.com.cpa.questionario.service.InstituicaoScopeService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,17 +20,32 @@ import java.util.List;
 public class AvaliacaoCsvController {
 
     private final RespostaAlunoRepository respostaAlunoRepo;
+    private final AvaliacaoAplicadaRepository avaliacaoAplicadaRepository;
+    private final InstituicaoScopeService instituicaoScopeService;
 
-    public AvaliacaoCsvController(RespostaAlunoRepository respostaAlunoRepo) {
+    public AvaliacaoCsvController(RespostaAlunoRepository respostaAlunoRepo,
+                                  AvaliacaoAplicadaRepository avaliacaoAplicadaRepository,
+                                  InstituicaoScopeService instituicaoScopeService) {
         this.respostaAlunoRepo = respostaAlunoRepo;
+        this.avaliacaoAplicadaRepository = avaliacaoAplicadaRepository;
+        this.instituicaoScopeService = instituicaoScopeService;
     }
 
     @GetMapping("/{avaliacaoId}/csv-template")
     public ResponseEntity<byte[]> baixarCsvTemplate(@PathVariable Long avaliacaoId) {
+        AvaliacaoAplicada avaliacao = avaliacaoAplicadaRepository.findById(avaliacaoId)
+                .orElseThrow(() -> new IllegalArgumentException("Avaliação não encontrada"));
+        instituicaoScopeService.validarAcesso(avaliacao.getInstituicao());
+
         List<RespostaAluno> respostas = respostaAlunoRepo.findByAvaliacaoAplicadaId(avaliacaoId);
 
         // Ordena pra ficar bem legível
-        respostas.sort(Comparator.comparing(ra -> ra.getAluno().getNome(), String.CASE_INSENSITIVE_ORDER));
+        respostas.sort(Comparator.comparing(ra -> {
+            if (ra.isAnonima() || ra.getAluno() == null || ra.getAluno().getNome() == null) {
+                return "ANONIMO";
+            }
+            return ra.getAluno().getNome();
+        }, String.CASE_INSENSITIVE_ORDER));
 
         StringBuilder csv = new StringBuilder();
 
@@ -35,7 +53,7 @@ public class AvaliacaoCsvController {
         csv.append("aluno_nome;questao_texto;resposta\n");
 
         for (RespostaAluno ra : respostas) {
-            String alunoNome = safe(ra.getAluno() != null ? ra.getAluno().getNome() : null);
+            String alunoNome = ra.isAnonima() ? "ANONIMO" : safe(ra.getAluno() != null ? ra.getAluno().getNome() : null);
 
             List<Answer> ansList = ra.getRespostas();
             if (ansList == null || ansList.isEmpty()) {

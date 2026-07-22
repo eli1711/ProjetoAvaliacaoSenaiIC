@@ -4,6 +4,7 @@ import br.com.cpa.questionario.model.*;
 import br.com.cpa.questionario.repository.AlunoRepository;
 import br.com.cpa.questionario.repository.TurmaRepository;
 import br.com.cpa.questionario.repository.UserRepository;
+import br.com.cpa.questionario.service.InstituicaoScopeService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -27,15 +28,18 @@ public class UserController {
     private final TurmaRepository turmaRepository;
     private final PasswordEncoder passwordEncoder;
     private final AlunoRepository alunoRepository;
+    private final InstituicaoScopeService instituicaoScopeService;
 
     public UserController(UserRepository userRepository,
                           TurmaRepository turmaRepository,
                           PasswordEncoder passwordEncoder,
-                          AlunoRepository alunoRepository) {
+                          AlunoRepository alunoRepository,
+                          InstituicaoScopeService instituicaoScopeService) {
         this.userRepository = userRepository;
         this.turmaRepository = turmaRepository;
         this.passwordEncoder = passwordEncoder;
         this.alunoRepository = alunoRepository;
+        this.instituicaoScopeService = instituicaoScopeService;
     }
 
     // ========== CADASTRO PÚBLICO DE ALUNO ==========
@@ -79,6 +83,7 @@ public class UserController {
         if (turmaId != null) {
             Turma turma = turmaRepository.findById(turmaId).orElse(null);
             user.setTurma(turma);
+            user.setInstituicao(turma != null ? turma.getInstituicao() : null);
         } else {
             user.setTurma(null);
         }
@@ -103,6 +108,7 @@ public class UserController {
         aluno.setEmail(user.getEmail());
         aluno.setUser(user);
         aluno.setTurma(user.getTurma());
+        aluno.setInstituicao(user.getInstituicao());
         alunoRepository.save(aluno);
 
         redirectAttributes.addFlashAttribute("success",
@@ -114,7 +120,9 @@ public class UserController {
 
     @GetMapping
     public String list(Model model) {
-        List<User> users = userRepository.findAll();
+        List<User> users = instituicaoScopeService.getInstituicaoAtual()
+                .map(instituicao -> userRepository.findByInstituicaoId(instituicao.getId()))
+                .orElseGet(userRepository::findAll);
         model.addAttribute("users", users);
         return "user/list";
     }
@@ -127,7 +135,7 @@ public class UserController {
         user.setStatus(StatusAluno.ATIVO);
 
         model.addAttribute("user", user);
-        model.addAttribute("turmas", turmaRepository.findAll());
+        model.addAttribute("turmas", getTurmasPermitidas());
         model.addAttribute("cadastroAluno", false);
         return "user/edit";
     }
@@ -140,8 +148,9 @@ public class UserController {
         if (user == null) {
             return "redirect:/users";
         }
+        instituicaoScopeService.validarAcesso(user.getInstituicao());
         model.addAttribute("user", user);
-        model.addAttribute("turmas", turmaRepository.findAll());
+        model.addAttribute("turmas", getTurmasPermitidas());
         model.addAttribute("cadastroAluno", false);
         return "user/edit";
     }
@@ -155,12 +164,25 @@ public class UserController {
 
         if (turmaId != null) {
             Turma turma = turmaRepository.findById(turmaId).orElse(null);
+            if (turma != null) {
+                instituicaoScopeService.validarAcesso(turma.getInstituicao());
+            }
             user.setTurma(turma);
+            user.setInstituicao(turma != null
+                    ? turma.getInstituicao()
+                    : instituicaoScopeService.instituicaoParaNovoRegistro(user.getInstituicao()));
         } else {
             user.setTurma(null);
+            user.setInstituicao(instituicaoScopeService.instituicaoParaNovoRegistro(user.getInstituicao()));
         }
 
         User existing = userRepository.findByUsername(user.getUsername());
+        if (existing != null) {
+            instituicaoScopeService.validarAcesso(existing.getInstituicao());
+            if (user.getInstituicao() == null) {
+                user.setInstituicao(existing.getInstituicao());
+            }
+        }
         if (existing == null) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         } else {
@@ -185,7 +207,11 @@ public class UserController {
     @PostMapping("/{username}/delete")
     public String delete(@PathVariable String username,
                          RedirectAttributes redirectAttributes) {
-        userRepository.deleteById(username);
+        User user = userRepository.findByUsername(username);
+        if (user != null) {
+            instituicaoScopeService.validarAcesso(user.getInstituicao());
+            userRepository.delete(user);
+        }
         redirectAttributes.addFlashAttribute("success", "Usuário excluído com sucesso!");
         return "redirect:/users";
     }
@@ -267,6 +293,7 @@ public class UserController {
                 user.setStatus(StatusAluno.ATIVO);
                 user.setTurma(null); // será definido no primeiro login
                 user.setRa(ra);
+                user.setInstituicao(instituicaoScopeService.instituicaoParaNovoRegistro(null));
 
                 // senha = CPF
                 user.setPassword(passwordEncoder.encode(cpf));
@@ -281,6 +308,7 @@ public class UserController {
                 aluno.setEmail(user.getEmail());
                 aluno.setUser(user);
                 aluno.setTurma(null);
+                aluno.setInstituicao(user.getInstituicao());
 
                 alunoRepository.save(aluno);
 
@@ -297,5 +325,11 @@ public class UserController {
         redirectAttributes.addFlashAttribute("success",
                 "Importação concluída. Criados: " + criados + ", ignorados: " + ignorados + ".");
         return "redirect:/users";
+    }
+
+    private List<Turma> getTurmasPermitidas() {
+        return instituicaoScopeService.getInstituicaoAtual()
+                .map(instituicao -> turmaRepository.findByInstituicaoId(instituicao.getId()))
+                .orElseGet(turmaRepository::findAll);
     }
 }

@@ -9,4 +9,8 @@ import java.util.List;
 public interface AvaliacaoAplicadaRepository extends JpaRepository<AvaliacaoAplicada, Long> {
 
     List<AvaliacaoAplicada> findByTurmaIdAndStatus(Long turmaId, StatusAvaliacao status);
+
+    List<AvaliacaoAplicada> findByInstituicaoId(Long instituicaoId);
+
+    List<AvaliacaoAplicada> findByTurmaIdAndStatusAndInstituicaoId(Long turmaId, StatusAvaliacao status, Long instituicaoId);
 }

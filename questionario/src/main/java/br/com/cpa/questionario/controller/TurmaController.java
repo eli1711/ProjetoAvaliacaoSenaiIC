@@ -2,6 +2,7 @@ package br.com.cpa.questionario.controller;
 
 import br.com.cpa.questionario.model.Turma;
 import br.com.cpa.questionario.repository.TurmaRepository;
+import br.com.cpa.questionario.service.InstituicaoScopeService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -12,15 +13,21 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class TurmaController {
 
     private final TurmaRepository turmaRepository;
+    private final InstituicaoScopeService instituicaoScopeService;
 
-    public TurmaController(TurmaRepository turmaRepository) {
+    public TurmaController(TurmaRepository turmaRepository,
+                           InstituicaoScopeService instituicaoScopeService) {
         this.turmaRepository = turmaRepository;
+        this.instituicaoScopeService = instituicaoScopeService;
     }
 
     // LISTA TODAS AS TURMAS
     @GetMapping
     public String list(Model model) {
-        model.addAttribute("turmas", turmaRepository.findAll());
+        var turmas = instituicaoScopeService.getInstituicaoAtual()
+                .map(instituicao -> turmaRepository.findByInstituicaoId(instituicao.getId()))
+                .orElseGet(turmaRepository::findAll);
+        model.addAttribute("turmas", turmas);
         return "turma/list"; // templates/turma/list.html
     }
 
@@ -36,6 +43,7 @@ public class TurmaController {
     public String editTurma(@PathVariable Long id, Model model) {
         Turma turma = turmaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Turma não encontrada"));
+        instituicaoScopeService.validarAcesso(turma.getInstituicao());
         model.addAttribute("turma", turma);
         return "turma/form";
     }
@@ -44,6 +52,7 @@ public class TurmaController {
     @PostMapping
     public String saveTurma(@ModelAttribute Turma turma,
                             RedirectAttributes redirectAttributes) {
+        turma.setInstituicao(instituicaoScopeService.instituicaoParaNovoRegistro(turma.getInstituicao()));
         turmaRepository.save(turma);
         redirectAttributes.addFlashAttribute("success", "Turma salva com sucesso!");
         return "redirect:/turmas";
@@ -53,7 +62,10 @@ public class TurmaController {
     @PostMapping("/{id}/delete")
     public String deleteTurma(@PathVariable Long id,
                               RedirectAttributes redirectAttributes) {
-        turmaRepository.deleteById(id);
+        Turma turma = turmaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Turma não encontrada"));
+        instituicaoScopeService.validarAcesso(turma.getInstituicao());
+        turmaRepository.delete(turma);
         redirectAttributes.addFlashAttribute("success", "Turma removida com sucesso!");
         return "redirect:/turmas";
     }

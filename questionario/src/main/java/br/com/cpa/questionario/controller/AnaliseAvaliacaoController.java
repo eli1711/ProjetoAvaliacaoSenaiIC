@@ -7,6 +7,7 @@ import br.com.cpa.questionario.repository.ImportanciaItemRespostaRepository;
 import br.com.cpa.questionario.repository.ImportanciaQuestaoRespostaRepository;
 import br.com.cpa.questionario.repository.RespostaAlunoRepository;
 import br.com.cpa.questionario.repository.TurmaRepository;
+import br.com.cpa.questionario.service.InstituicaoScopeService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,19 +29,22 @@ public class AnaliseAvaliacaoController {
     // ✅ NOVO
     private final RespostaAlunoRepository respostaAlunoRepository;
     private final ImportanciaQuestaoRespostaRepository importanciaQuestaoRespostaRepository;
+    private final InstituicaoScopeService instituicaoScopeService;
 
     public AnaliseAvaliacaoController(TurmaRepository turmaRepository,
                                       AvaliacaoAplicadaRepository avaliacaoAplicadaRepository,
                                       AnswerRepository answerRepository,
                                       ImportanciaItemRespostaRepository importanciaItemRespostaRepository,
                                       RespostaAlunoRepository respostaAlunoRepository,
-                                      ImportanciaQuestaoRespostaRepository importanciaQuestaoRespostaRepository) {
+                                      ImportanciaQuestaoRespostaRepository importanciaQuestaoRespostaRepository,
+                                      InstituicaoScopeService instituicaoScopeService) {
         this.turmaRepository = turmaRepository;
         this.avaliacaoAplicadaRepository = avaliacaoAplicadaRepository;
         this.answerRepository = answerRepository;
         this.importanciaItemRespostaRepository = importanciaItemRespostaRepository;
         this.respostaAlunoRepository = respostaAlunoRepository;
         this.importanciaQuestaoRespostaRepository = importanciaQuestaoRespostaRepository;
+        this.instituicaoScopeService = instituicaoScopeService;
     }
 
     @GetMapping("/avaliacoes")
@@ -51,8 +55,12 @@ public class AnaliseAvaliacaoController {
                                     @RequestParam(required = false) Long respostaAlunoId,
                                     Model model) {
 
-        List<Turma> turmas = turmaRepository.findAll();
-        List<AvaliacaoAplicada> todasAvaliacoes = avaliacaoAplicadaRepository.findAll();
+        List<Turma> turmas = instituicaoScopeService.getInstituicaoAtual()
+                .map(instituicao -> turmaRepository.findByInstituicaoId(instituicao.getId()))
+                .orElseGet(turmaRepository::findAll);
+        List<AvaliacaoAplicada> todasAvaliacoes = instituicaoScopeService.getInstituicaoAtual()
+                .map(instituicao -> avaliacaoAplicadaRepository.findByInstituicaoId(instituicao.getId()))
+                .orElseGet(avaliacaoAplicadaRepository::findAll);
 
         Set<Integer> anosSet = todasAvaliacoes.stream()
                 .map(a -> a.getQuestionario().getYear())
@@ -132,7 +140,10 @@ public class AnaliseAvaliacaoController {
                     totalNotasAvaliacao.merge(avId, 1L, Long::sum);
                 }
 
-                if (ans.getRespostaAluno() != null && q.getItemAvaliacao() != null) {
+                if (ans.getRespostaAluno() != null
+                        && !ans.getRespostaAluno().isAnonima()
+                        && ans.getRespostaAluno().getAluno() != null
+                        && q.getItemAvaliacao() != null) {
                     RespostaAluno ra = ans.getRespostaAluno();
                     ItemAvaliacao item = q.getItemAvaliacao();
 
@@ -218,7 +229,9 @@ public class AnaliseAvaliacaoController {
         // Lista de "envios" (RespostaAluno) disponíveis de acordo com o filtro de avaliações
         List<RespostaAluno> enviosDisponiveis = new ArrayList<>();
         for (AvaliacaoAplicada av : avaliacoesFiltradas) {
-            enviosDisponiveis.addAll(respostaAlunoRepository.findByAvaliacaoAplicadaId(av.getId()));
+            respostaAlunoRepository.findByAvaliacaoAplicadaId(av.getId()).stream()
+                    .filter(envio -> !envio.isAnonima() && envio.getAluno() != null)
+                    .forEach(enviosDisponiveis::add);
         }
         // ordena por nome
         enviosDisponiveis.sort(Comparator.comparing(r -> {
@@ -226,6 +239,15 @@ public class AnaliseAvaliacaoController {
             if (r.getAluno().getNome() == null) return "";
             return r.getAluno().getNome().toLowerCase(Locale.ROOT);
         }));
+
+        if (respostaAlunoId != null) {
+            Long idSolicitado = respostaAlunoId;
+            boolean envioPermitido = enviosDisponiveis.stream()
+                    .anyMatch(envio -> envio.getId() != null && envio.getId().equals(idSolicitado));
+            if (!envioPermitido) {
+                respostaAlunoId = null;
+            }
+        }
 
         List<RelatorioRespostaAlunoDTO> relatorioAluno = List.of();
         Double mediaAluno = null;        // média só de quantitativas 1..4

@@ -19,11 +19,17 @@ public class AvaliacaoAplicada {
     @JoinColumn(name = "questionnaire_id")
     private Questionnaire questionario;
 
+    @ManyToOne
+    @JoinColumn(name = "instituicao_id")
+    private Instituicao instituicao;
+
     private LocalDateTime dataInicio;
     private LocalDateTime dataFim;
 
     @Enumerated(EnumType.STRING)
     private StatusAvaliacao status = StatusAvaliacao.ABERTA;
+
+    private Boolean anonima = Boolean.TRUE;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -34,6 +40,9 @@ public class AvaliacaoAplicada {
     public Questionnaire getQuestionario() { return questionario; }
     public void setQuestionario(Questionnaire questionario) { this.questionario = questionario; }
 
+    public Instituicao getInstituicao() { return instituicao; }
+    public void setInstituicao(Instituicao instituicao) { this.instituicao = instituicao; }
+
     public LocalDateTime getDataInicio() { return dataInicio; }
     public void setDataInicio(LocalDateTime dataInicio) { this.dataInicio = dataInicio; }
 
@@ -42,4 +51,7 @@ public class AvaliacaoAplicada {
 
     public StatusAvaliacao getStatus() { return status; }
     public void setStatus(StatusAvaliacao status) { this.status = status; }
+
+    public boolean isAnonima() { return anonima == null || anonima; }
+    public void setAnonima(boolean anonima) { this.anonima = anonima; }
 }

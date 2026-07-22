@@ -23,6 +23,16 @@ public class Questionnaire {
     @Enumerated(EnumType.STRING)
     private StatusDisponibilidade status;
 
+    @ManyToOne
+    @JoinColumn(name = "instituicao_id")
+    private Instituicao instituicao;
+
+    private Long questionarioBaseId;
+
+    private Integer versao = 0;
+
+    private Boolean bloqueado = Boolean.FALSE;
+
     @OneToMany(mappedBy = "questionnaire", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Question> questions;
 
@@ -43,6 +53,18 @@ public class Questionnaire {
 
     public StatusDisponibilidade getStatus() { return status; }
     public void setStatus(StatusDisponibilidade status) { this.status = status; }
+
+    public Instituicao getInstituicao() { return instituicao; }
+    public void setInstituicao(Instituicao instituicao) { this.instituicao = instituicao; }
+
+    public Long getQuestionarioBaseId() { return questionarioBaseId; }
+    public void setQuestionarioBaseId(Long questionarioBaseId) { this.questionarioBaseId = questionarioBaseId; }
+
+    public Integer getVersao() { return versao; }
+    public void setVersao(Integer versao) { this.versao = versao; }
+
+    public boolean isBloqueado() { return Boolean.TRUE.equals(bloqueado); }
+    public void setBloqueado(boolean bloqueado) { this.bloqueado = bloqueado; }
 
     public List<Question> getQuestions() { return questions; }
     public void setQuestions(List<Question> questions) { this.questions = questions; }

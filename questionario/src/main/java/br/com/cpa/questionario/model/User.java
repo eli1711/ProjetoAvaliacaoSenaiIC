@@ -28,6 +28,10 @@ public class User {
     @JoinColumn(name = "turma_id")
     private Turma turma;
 
+    @ManyToOne
+    @JoinColumn(name = "instituicao_id")
+    private Instituicao instituicao;
+
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
 
@@ -57,4 +61,7 @@ public class User {
 
     public Turma getTurma() { return turma; }
     public void setTurma(Turma turma) { this.turma = turma; }
+
+    public Instituicao getInstituicao() { return instituicao; }
+    public void setInstituicao(Instituicao instituicao) { this.instituicao = instituicao; }
 }

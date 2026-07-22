@@ -7,6 +7,7 @@ import br.com.cpa.questionario.model.User;
 import br.com.cpa.questionario.repository.AlunoRepository;
 import br.com.cpa.questionario.repository.TurmaRepository;
 import br.com.cpa.questionario.repository.UserRepository;
+import br.com.cpa.questionario.service.InstituicaoScopeService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -32,15 +33,18 @@ public class AlunoController {
     private final TurmaRepository turmaRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final InstituicaoScopeService instituicaoScopeService;
 
     public AlunoController(AlunoRepository alunoRepository,
                            TurmaRepository turmaRepository,
                            UserRepository userRepository,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           InstituicaoScopeService instituicaoScopeService) {
         this.alunoRepository = alunoRepository;
         this.turmaRepository = turmaRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.instituicaoScopeService = instituicaoScopeService;
     }
 
     // ===============================================================
@@ -56,7 +60,9 @@ public class AlunoController {
     // ===============================================================
     @GetMapping("/list")
     public String listarAlunos(Model model) {
-        List<Aluno> alunos = alunoRepository.findAll();
+        List<Aluno> alunos = instituicaoScopeService.getInstituicaoAtual()
+                .map(instituicao -> alunoRepository.findByInstituicaoId(instituicao.getId()))
+                .orElseGet(alunoRepository::findAll);
         model.addAttribute("alunos", alunos);
         return "aluno/list"; // templates/aluno/list.html
     }
@@ -77,7 +83,7 @@ public class AlunoController {
         }
 
         model.addAttribute("aluno", aluno);
-        model.addAttribute("turmas", turmaRepository.findAll());
+        model.addAttribute("turmas", getTurmasPermitidas());
         return "aluno/definir_turma";
     }
 
@@ -95,14 +101,17 @@ public class AlunoController {
 
         Turma turma = turmaRepository.findById(turmaId)
                 .orElseThrow(() -> new IllegalArgumentException("Turma não encontrada"));
+        instituicaoScopeService.validarAcesso(turma.getInstituicao());
 
         aluno.setTurma(turma);
+        aluno.setInstituicao(turma.getInstituicao());
         alunoRepository.save(aluno);
 
         // mantém User sincronizado
         User user = userRepository.findByUsername(username);
         if (user != null) {
             user.setTurma(turma);
+            user.setInstituicao(turma.getInstituicao());
             userRepository.save(user);
         }
 
@@ -132,7 +141,7 @@ public class AlunoController {
     // ===============================================================
     @GetMapping("/import")
     public String importarAlunosForm(Model model) {
-        model.addAttribute("turmas", turmaRepository.findAll());
+        model.addAttribute("turmas", getTurmasPermitidas());
         return "aluno/import";
     }
 
@@ -151,6 +160,7 @@ public class AlunoController {
 
         Turma turma = turmaRepository.findById(turmaId)
                 .orElseThrow(() -> new IllegalArgumentException("Turma não encontrada."));
+        instituicaoScopeService.validarAcesso(turma.getInstituicao());
 
         int criados = 0;
         int ignorados = 0;
@@ -193,7 +203,9 @@ public class AlunoController {
 
                 boolean usernameJaExiste = userRepository.existsById(username);
                 boolean raJaExisteEmUser = userRepository.existsByRa(ra);
-                boolean raJaExisteEmAluno = alunoRepository.findByRa(ra).isPresent();
+                boolean raJaExisteEmAluno = turma.getInstituicao() != null
+                        ? alunoRepository.findByRaAndInstituicaoId(ra, turma.getInstituicao().getId()).isPresent()
+                        : alunoRepository.findByRa(ra).isPresent();
 
                 if (usernameJaExiste || raJaExisteEmUser || raJaExisteEmAluno) {
                     ignorados++;
@@ -209,6 +221,7 @@ public class AlunoController {
                 user.setStatus(StatusAluno.ATIVO);
                 user.setTurma(turma);
                 user.setRa(ra);
+                user.setInstituicao(turma.getInstituicao());
 
                 // senha = CPF criptografado
                 user.setPassword(passwordEncoder.encode(cpf));
@@ -223,6 +236,7 @@ public class AlunoController {
                 aluno.setEmail(user.getEmail());
                 aluno.setUser(user);
                 aluno.setTurma(turma);
+                aluno.setInstituicao(turma.getInstituicao());
 
                 alunoRepository.save(aluno);
 
@@ -242,5 +256,11 @@ public class AlunoController {
         redirectAttributes.addFlashAttribute("alunosImportados", alunosImportados);
 
         return "redirect:/alunos/import";
+    }
+
+    private List<Turma> getTurmasPermitidas() {
+        return instituicaoScopeService.getInstituicaoAtual()
+                .map(instituicao -> turmaRepository.findByInstituicaoId(instituicao.getId()))
+                .orElseGet(turmaRepository::findAll);
     }
 }

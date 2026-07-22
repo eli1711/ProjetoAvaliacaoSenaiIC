@@ -4,6 +4,7 @@ import br.com.cpa.questionario.model.*;
 import br.com.cpa.questionario.repository.QuestionRepository;
 import br.com.cpa.questionario.repository.QuestionnaireRepository;
 import br.com.cpa.questionario.repository.AnswerRepository;
+import br.com.cpa.questionario.service.InstituicaoScopeService;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,13 +21,16 @@ public class QuestionnaireController {
     private final QuestionnaireRepository questionnaireRepository;
     private final QuestionRepository questionRepository;
     private final AnswerRepository answerRepository;
+    private final InstituicaoScopeService instituicaoScopeService;
 
     public QuestionnaireController(QuestionnaireRepository questionnaireRepository,
                                    QuestionRepository questionRepository,
-                                   AnswerRepository answerRepository) {
+                                   AnswerRepository answerRepository,
+                                   InstituicaoScopeService instituicaoScopeService) {
         this.questionnaireRepository = questionnaireRepository;
         this.questionRepository = questionRepository;
         this.answerRepository = answerRepository;
+        this.instituicaoScopeService = instituicaoScopeService;
     }
 
     // =====================================================================
@@ -34,8 +38,19 @@ public class QuestionnaireController {
     // =====================================================================
 
     private Questionnaire getQuestionnaireOrThrow(Long id) {
-        return questionnaireRepository.findById(id)
+        Questionnaire questionnaire = questionnaireRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Questionário não encontrado"));
+        instituicaoScopeService.validarAcesso(questionnaire.getInstituicao());
+        return questionnaire;
+    }
+
+    private boolean redirecionarSeBloqueado(Questionnaire questionnaire, RedirectAttributes redirectAttributes) {
+        if (!questionnaire.isBloqueado()) {
+            return false;
+        }
+        redirectAttributes.addFlashAttribute("error",
+                "Este questionario e uma versao historica publicada e nao pode ser alterado.");
+        return true;
     }
 
     // =====================================================================
@@ -44,14 +59,20 @@ public class QuestionnaireController {
 
     @GetMapping
     public String listQuestionnaires(Model model) {
-        model.addAttribute("questionnaires", questionnaireRepository.findAll());
+        var questionnaires = instituicaoScopeService.getInstituicaoAtual()
+                .map(instituicao -> questionnaireRepository.findModelosEditaveisByInstituicaoId(instituicao.getId()))
+                .orElseGet(questionnaireRepository::findModelosEditaveis);
+        model.addAttribute("questionnaires", questionnaires);
         return "questionnaire/list";
     }
 
     @GetMapping("/available")
     public String availableQuestionnaires(Model model) {
-        model.addAttribute("questionnaires",
-                questionnaireRepository.findByStatus(StatusDisponibilidade.DISPONIVEL));
+        var questionnaires = instituicaoScopeService.getInstituicaoAtual()
+                .map(instituicao -> questionnaireRepository.findModelosEditaveisByStatusAndInstituicaoId(
+                        StatusDisponibilidade.DISPONIVEL, instituicao.getId()))
+                .orElseGet(() -> questionnaireRepository.findModelosEditaveisByStatus(StatusDisponibilidade.DISPONIVEL));
+        model.addAttribute("questionnaires", questionnaires);
         return "questionnaire/available";
     }
 
@@ -139,6 +160,13 @@ public class QuestionnaireController {
 
     @PostMapping("/save")
     public String saveQuestionnaire(@ModelAttribute Questionnaire questionnaire) {
+        questionnaire.setInstituicao(instituicaoScopeService.instituicaoParaNovoRegistro(questionnaire.getInstituicao()));
+        questionnaire.setQuestionarioBaseId(null);
+        questionnaire.setVersao(0);
+        questionnaire.setBloqueado(false);
+        if (questionnaire.getStatus() == null) {
+            questionnaire.setStatus(StatusDisponibilidade.NAO_DISPONIVEL);
+        }
         questionnaireRepository.save(questionnaire);
         return "redirect:/questionnaires";
     }
@@ -152,24 +180,43 @@ public class QuestionnaireController {
     }
 
     @GetMapping("/{id}/edit")
-    public String editQuestionnaire(@PathVariable Long id, Model model) {
-        model.addAttribute("questionnaire", getQuestionnaireOrThrow(id));
+    public String editQuestionnaire(@PathVariable Long id,
+                                    Model model,
+                                    RedirectAttributes redirectAttributes) {
+        Questionnaire questionnaire = getQuestionnaireOrThrow(id);
+        if (redirecionarSeBloqueado(questionnaire, redirectAttributes)) {
+            return "redirect:/questionnaires";
+        }
+        model.addAttribute("questionnaire", questionnaire);
         return "questionnaire/edit";
     }
 
     @PostMapping("/{id}/edit")
     public String updateQuestionnaire(@PathVariable Long id,
-                                      @ModelAttribute Questionnaire questionnaire) {
-        questionnaire.setId(id);
-        questionnaireRepository.save(questionnaire);
+                                      @ModelAttribute Questionnaire questionnaire,
+                                      RedirectAttributes redirectAttributes) {
+        Questionnaire existente = getQuestionnaireOrThrow(id);
+        if (redirecionarSeBloqueado(existente, redirectAttributes)) {
+            return "redirect:/questionnaires";
+        }
+        existente.setName(questionnaire.getName());
+        existente.setDescription(questionnaire.getDescription());
+        existente.setSemester(questionnaire.getSemester());
+        existente.setYear(questionnaire.getYear());
+        existente.setStatus(questionnaire.getStatus());
+        questionnaireRepository.save(existente);
         return "redirect:/questionnaires";
     }
 
     @PostMapping("/{id}/delete")
     public String deleteQuestionnaire(@PathVariable Long id,
                                       RedirectAttributes redirectAttributes) {
+        Questionnaire questionnaire = getQuestionnaireOrThrow(id);
+        if (redirecionarSeBloqueado(questionnaire, redirectAttributes)) {
+            return "redirect:/questionnaires";
+        }
         try {
-            questionnaireRepository.deleteById(id);
+            questionnaireRepository.delete(questionnaire);
             redirectAttributes.addFlashAttribute("success",
                     "Questionário apagado com sucesso.");
         } catch (org.springframework.dao.DataIntegrityViolationException ex) {
@@ -186,8 +233,13 @@ public class QuestionnaireController {
     // =====================================================================
 
     @GetMapping("/{id}/questions/new")
-    public String newQuestion(@PathVariable Long id, Model model) {
+    public String newQuestion(@PathVariable Long id,
+                              Model model,
+                              RedirectAttributes redirectAttributes) {
         Questionnaire questionnaire = getQuestionnaireOrThrow(id);
+        if (redirecionarSeBloqueado(questionnaire, redirectAttributes)) {
+            return "redirect:/questionnaires/" + id;
+        }
         model.addAttribute("questionnaire", questionnaire);
         model.addAttribute("question", new Question());
 
@@ -211,6 +263,12 @@ public class QuestionnaireController {
                                  Model model) {
 
         Questionnaire questionnaire = getQuestionnaireOrThrow(id);
+        if (questionnaire.isBloqueado()) {
+            model.addAttribute("error", "Este questionario e uma versao historica publicada e nao pode ser alterado.");
+            model.addAttribute("questionnaire", questionnaire);
+            model.addAttribute("questions", questionRepository.findByQuestionnaireId(id));
+            return "questionnaire/view";
+        }
 
         Question question = new Question();
         question.setText(text);

@@ -11,4 +11,8 @@ public interface TurmaRepository extends JpaRepository<Turma, Long> {
     List<Turma> findByAnoAndSemestre(int ano, int semestre);
 
     Optional<Turma> findByNome(String nome);
+
+    List<Turma> findByInstituicaoId(Long instituicaoId);
+
+    Optional<Turma> findByNomeAndInstituicaoId(String nome, Long instituicaoId);
 }
