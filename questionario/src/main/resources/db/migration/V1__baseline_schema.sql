@@ -67,12 +67,8 @@ CREATE TABLE IF NOT EXISTS questionnaire (
     `year` INTEGER NOT NULL,
     status VARCHAR(255),
     instituicao_id BIGINT,
-    questionario_base_id BIGINT,
-    versao INTEGER NOT NULL DEFAULT 0,
-    bloqueado BIT NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
-    CONSTRAINT fk_questionnaire_instituicao FOREIGN KEY (instituicao_id) REFERENCES instituicao (id),
-    CONSTRAINT fk_questionnaire_base FOREIGN KEY (questionario_base_id) REFERENCES questionnaire (id)
+    CONSTRAINT fk_questionnaire_instituicao FOREIGN KEY (instituicao_id) REFERENCES instituicao (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS question (
@@ -167,7 +163,6 @@ CREATE INDEX idx_turma_instituicao ON turma (instituicao_id);
 CREATE INDEX idx_users_instituicao ON users (instituicao_id);
 CREATE INDEX idx_aluno_instituicao ON aluno (instituicao_id);
 CREATE INDEX idx_questionnaire_instituicao ON questionnaire (instituicao_id);
-CREATE INDEX idx_questionnaire_base ON questionnaire (questionario_base_id);
 CREATE INDEX idx_avaliacao_instituicao ON avaliacao_aplicada (instituicao_id);
 CREATE INDEX idx_avaliacao_turma_status ON avaliacao_aplicada (turma_id, status);
 CREATE INDEX idx_resposta_avaliacao ON resposta_aluno (avaliacao_aplicada_id);

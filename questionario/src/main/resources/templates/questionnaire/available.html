@@ -6,10 +6,45 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Questionários Disponíveis</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" th:href="@{/css/cpa-ui.css}" />
 </head>
 
-<body class="bg-gradient-to-br from-slate-100 to-red-100 min-h-screen flex flex-col font-sans">
+<body class="cpa-body">
+<div class="cpa-page">
+  <div th:replace="~{fragments :: header('minhas-avaliacoes', 'Painel do Aluno')}"></div>
+
+  <main class="cpa-main cpa-main-narrow">
+    <section class="cpa-hero">
+      <div>
+        <p class="cpa-kicker">Disponiveis</p>
+        <h1>Questionarios disponiveis</h1>
+        <p>Escolha um questionario para responder. Sua participacao ajuda a melhorar a instituicao.</p>
+      </div>
+    </section>
+
+    <section class="cpa-panel" style="margin-top:18px">
+      <div th:if="${#lists.isEmpty(questionnaires)}" class="cpa-empty-panel">Nenhum questionario disponivel no momento.</div>
+
+      <ul th:if="${!#lists.isEmpty(questionnaires)}" class="cpa-list">
+        <li th:each="questionnaire : ${questionnaires}" class="cpa-list-item">
+          <div>
+            <p class="cpa-list-title" th:text="${questionnaire.name}">Nome do questionario</p>
+            <div class="cpa-list-meta">
+              <span>Semestre <span th:text="${questionnaire.semester}">1</span></span>
+              <span class="cpa-meta-dot"></span>
+              <span th:text="${questionnaire.year}">2026</span>
+            </div>
+          </div>
+          <a th:href="@{/questionnaires/{id}/respond(id=${questionnaire.id})}" class="cpa-button cpa-button-primary cpa-button-small">Responder</a>
+        </li>
+      </ul>
+    </section>
+  </main>
+
+  <div th:replace="~{fragments :: footer}"></div>
+</div>
+<script th:src="@{/js/cpa-ui.js}"></script>
+<template hidden aria-hidden="true" th:remove="all">
 
 <!-- Cabeçalho padrão vermelho -->
 <header class="bg-red-700 text-white shadow">
@@ -149,5 +184,6 @@
     © 2025 Sistema de Avaliação CPA
   </div>
 </footer>
+</template>
 </body>
 </html>

@@ -3,188 +3,106 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Importar Alunos - Sistema CPA</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Importar alunos - Sistema CPA</title>
+  <link rel="stylesheet" th:href="@{/css/cpa-ui.css}" />
 </head>
-
-<body class="bg-gradient-to-br from-slate-100 to-red-100 min-h-screen flex flex-col font-sans">
-
-<header class="bg-red-700 text-white shadow">
-  <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center gap-4">
-    <a href="/home" class="font-semibold tracking-tight text-lg flex items-center gap-3">
-      <span class="inline-flex items-center justify-center h-9 w-9 rounded-md bg-red-800 text-xs font-bold">
-        CPA
-      </span>
-      <div class="flex flex-col leading-tight">
-        <span class="text-[11px] uppercase tracking-[0.2em] text-red-100">Sistema CPA</span>
-        <span class="text-base">Gestão de Alunos</span>
-      </div>
-    </a>
-
-    <nav class="hidden md:flex items-center gap-5 text-xs font-medium">
-      <a href="/home" class="hover:text-red-100 transition">Início</a>
-      <a href="/alunos" class="hover:text-red-100 transition">Alunos</a>
-      <a href="/turmas" class="hover:text-red-100 transition">Turmas</a>
-      <a href="/users" class="hover:text-red-100 transition">Usuários</a>
-      <form th:action="@{/logout}" method="post" class="inline">
-        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-        <button type="submit"
-                class="ml-2 px-3 py-1.5 rounded-full bg-red-900 hover:bg-red-800 text-[11px] font-semibold shadow-sm transition">
-          Sair
-        </button>
-      </form>
-    </nav>
-
-    <!-- Mobile -->
-    <div class="flex md:hidden items-center gap-2">
-      <a href="/alunos" class="text-xs px-3 py-1.5 rounded-full bg-red-800 hover:bg-red-900 transition">
-        Alunos
+<body class="cpa-body">
+<div class="cpa-page">
+  <header class="cpa-header">
+    <div class="cpa-header-inner">
+      <a href="/home" class="cpa-brand">
+        <span class="cpa-brand-mark">CPA</span>
+        <span>
+          <span class="cpa-brand-kicker">Sistema CPA</span>
+          <span class="cpa-brand-title">Importar alunos</span>
+        </span>
       </a>
-      <form th:action="@{/logout}" method="post" class="inline">
-        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-        <button type="submit"
-                class="px-3 py-1.5 rounded-full bg-red-900 hover:bg-red-800 text-[11px] font-semibold shadow-sm transition">
-          Sair
-        </button>
-      </form>
+      <button class="cpa-menu-button" type="button" aria-label="Abrir menu" aria-expanded="false" data-cpa-menu-button="main-nav">
+        <span></span><span></span><span></span>
+      </button>
+      <nav id="main-nav" class="cpa-nav" aria-label="Navegacao principal">
+        <a href="/home" class="cpa-nav-link">Inicio</a>
+        <a href="/alunos" class="cpa-nav-link is-active">Alunos</a>
+        <a href="/turmas" class="cpa-nav-link">Turmas</a>
+        <a href="/users" class="cpa-nav-link">Usuarios</a>
+        <form th:action="@{/logout}" method="post" class="cpa-logout-form">
+          <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+          <button type="submit" class="cpa-button cpa-button-secondary cpa-button-small">Sair</button>
+        </form>
+      </nav>
     </div>
-  </div>
-</header>
+  </header>
 
-<main class="flex-1">
-  <div class="max-w-xl mx-auto px-4 py-10">
-    <div class="bg-white shadow-xl rounded-2xl p-10 w-full border border-red-100">
-
-      <h1 class="text-2xl font-bold text-slate-900 mb-6 text-center tracking-tight">
-        Importar Alunos (CSV)
-      </h1>
-
-      <!-- Mensagens flash -->
-      <div th:if="${error}" class="mb-4 text-center text-red-600 text-sm font-medium"
-           th:text="${error}"></div>
-      <div th:if="${success}" class="mb-4 text-center text-emerald-600 text-sm font-medium"
-           th:text="${success}"></div>
-
-      <!-- Descrição -->
-      <p class="text-sm text-slate-600 mb-4">
-        Envie um arquivo <strong>.csv</strong> contendo as colunas, nessa ordem:
-        <span class="font-mono">nome;ra;cpf</span>.<br/>
-        O <strong>RA</strong> será usado como <strong>login do aluno</strong> no sistema e o
-        <strong>CPF</strong> será a <strong>senha inicial</strong> para acesso.<br/>
-        A <strong>turma</strong> será definida no campo abaixo e aplicada a todos os alunos do arquivo.
-      </p>
-
-      <!-- Botão exemplo CSV -->
-      <div class="mb-5 flex justify-end">
-        <a th:href="@{/alunos/import/exemplo}"
-           class="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border border-slate-300
-                  text-slate-700 hover:bg-slate-100 transition">
-          📄 Baixar exemplo de CSV
-        </a>
+  <main class="cpa-main cpa-main-narrow">
+    <section class="cpa-hero">
+      <div>
+        <p class="cpa-kicker">CSV</p>
+        <h1>Importar alunos</h1>
+        <p>O arquivo deve conter as colunas: nome;ra;cpf. O usuario sera o RA e a senha inicial sera o CPF somente com numeros.</p>
       </div>
+      <div class="cpa-actions">
+        <a th:href="@{/alunos/import/exemplo}" class="cpa-button cpa-button-secondary">Baixar exemplo</a>
+      </div>
+    </section>
+
+    <section class="cpa-panel" style="margin-top:18px">
+      <div th:if="${error}" class="cpa-alert cpa-alert-danger" th:text="${error}"></div>
+      <div th:if="${success}" class="cpa-alert cpa-alert-success" th:text="${success}"></div>
 
       <form th:action="@{/alunos/import}"
             method="post"
             enctype="multipart/form-data"
-            class="space-y-5">
+            class="cpa-form-grid"
+            data-cpa-loading>
+        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
 
-        <input type="hidden"
-               th:name="${_csrf?.parameterName}"
-               th:value="${_csrf?.token}" />
-
-        <!-- Turma -->
-        <div>
-          <label for="turmaId" class="block text-sm font-medium text-slate-700 mb-1">
-            Turma dos alunos importados
-          </label>
-          <select id="turmaId"
-                  name="turmaId"
-                  required
-                  class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm
-                         bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition">
-            <option value="">Selecione uma turma...</option>
+        <div class="cpa-field cpa-field-full">
+          <label for="turmaId">Turma dos alunos importados</label>
+          <select id="turmaId" name="turmaId" required class="cpa-select">
+            <option value="">Selecione uma turma</option>
             <option th:each="t : ${turmas}"
                     th:value="${t.id}"
                     th:text="${t.nome + ' - ' + t.curso + ' (' + t.ano + '/' + t.semestre + ')'}">
             </option>
           </select>
-          <p class="mt-1 text-xs text-slate-500">
-            Todos os alunos do arquivo serão vinculados a esta turma.
-          </p>
         </div>
 
-        <!-- Arquivo CSV -->
-        <div>
-          <label for="file" class="block text-sm font-medium text-slate-700 mb-1">
-            Arquivo CSV
-          </label>
-          <input type="file"
-                 id="file"
-                 name="file"
-                 accept=".csv"
-                 required
-                 class="w-full text-sm text-slate-700
-                        file:mr-4 file:py-2 file:px-4
-                        file:rounded-lg file:border-0
-                        file:text-sm file:font-medium
-                        file:bg-red-700 file:text-white
-                        hover:file:bg-red-800" />
+        <div class="cpa-field cpa-field-full">
+          <label for="file">Arquivo CSV</label>
+          <input type="file" id="file" name="file" accept=".csv" required class="cpa-input" />
+          <p class="cpa-help">Formato esperado: nome;ra;cpf. Tambem sao aceitos arquivos separados por virgula.</p>
         </div>
 
-        <div class="flex justify-center gap-3 pt-2">
-          <a th:href="@{/alunos}"
-             class="px-5 py-2 rounded-lg border border-slate-300
-                    text-slate-700 text-sm font-medium hover:bg-slate-100 transition">
-            ← Voltar
-          </a>
-
-          <button type="submit"
-                  class="bg-red-700 text-white px-6 py-2 rounded-lg
-                         text-sm font-medium shadow hover:bg-red-800 transition">
-            📂 Importar arquivo
-          </button>
+        <div class="cpa-actions cpa-field-full" style="justify-content:flex-end">
+          <a th:href="@{/alunos}" class="cpa-button cpa-button-secondary">Cancelar</a>
+          <button type="submit" class="cpa-button cpa-button-primary" data-loading-text="Importando...">Importar arquivo</button>
         </div>
       </form>
 
-      <!-- Lista de alunos importados -->
-      <div th:if="${alunosImportados != null && !#lists.isEmpty(alunosImportados)}"
-           class="mt-8 border-t border-slate-200 pt-6">
-        <h2 class="text-lg font-semibold text-slate-900 mb-3 text-center">
-          Alunos importados nesta operação
-        </h2>
-
-        <div class="overflow-x-auto">
-          <table class="min-w-full border border-slate-200 rounded-lg overflow-hidden shadow-sm text-xs">
-            <thead class="bg-slate-50 text-slate-800 uppercase font-semibold">
+      <div th:if="${alunosImportados != null && !#lists.isEmpty(alunosImportados)}" style="margin-top:22px">
+        <h2 class="cpa-section-title" style="font-size:1.05rem;margin-bottom:12px">Alunos importados</h2>
+        <div class="cpa-table-wrap">
+          <table class="cpa-table">
+            <thead>
             <tr>
-              <th class="px-3 py-2 text-left">R.A.</th>
-              <th class="px-3 py-2 text-left">Nome</th>
-              <th class="px-3 py-2 text-left">CPF</th>
-              <th class="px-3 py-2 text-left">Turma</th>
+              <th>RA</th>
+              <th>Nome</th>
+              <th>Turma</th>
             </tr>
             </thead>
             <tbody>
-            <tr th:each="a : ${alunosImportados}"
-                class="border-t border-slate-100 hover:bg-slate-50 transition">
-              <td class="px-3 py-2" th:text="${a.ra}">123456</td>
-              <td class="px-3 py-2" th:text="${a.nome}">Nome do Aluno</td>
-              <td class="px-3 py-2" th:text="${a.cpf}">000.000.000-00</td>
-              <td class="px-3 py-2" th:text="${a.turma != null ? a.turma.nome : '—'}">Turma X</td>
+            <tr th:each="a : ${alunosImportados}">
+              <td data-label="RA" th:text="${a.ra}">123456</td>
+              <td data-label="Nome" th:text="${a.nome}">Nome</td>
+              <td data-label="Turma" th:text="${a.turma != null ? a.turma.nome : '-'}">Turma</td>
             </tr>
             </tbody>
           </table>
         </div>
       </div>
-
-    </div>
-  </div>
-</main>
-
-<footer class="border-t border-slate-200 bg-white">
-  <div class="max-w-6xl mx-auto px-4 py-4 text-center text-xs text-slate-500">
-    © 2025 Sistema de Avaliação CPA
-  </div>
-</footer>
-
+    </section>
+  </main>
+</div>
+<script th:src="@{/js/cpa-ui.js}"></script>
 </body>
 </html>

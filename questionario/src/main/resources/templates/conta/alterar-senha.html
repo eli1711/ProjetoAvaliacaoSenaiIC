@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Alterar senha - Sistema CPA</title>
+  <link rel="stylesheet" th:href="@{/css/cpa-ui.css}" />
+</head>
+<body class="cpa-body">
+<main class="cpa-main cpa-main-narrow" style="display:flex;align-items:center;min-height:100vh">
+  <section class="cpa-panel" style="width:min(100%,520px);margin:0 auto">
+    <div class="cpa-panel-header" style="display:block">
+      <p class="cpa-kicker">Seguranca da conta</p>
+      <h1 class="cpa-panel-title" style="font-size:1.55rem;margin-top:6px">Alterar senha</h1>
+      <p class="cpa-panel-subtitle" th:if="${mustChangePassword}">
+        Defina uma senha pessoal para continuar.
+      </p>
+      <p class="cpa-panel-subtitle" th:unless="${mustChangePassword}">
+        Atualize sua senha quando necessario.
+      </p>
+    </div>
+
+    <div th:if="${error}" class="cpa-alert cpa-alert-danger" th:text="${error}"></div>
+
+    <form th:action="@{/minha-conta/senha}" method="post" class="cpa-shell" data-cpa-loading>
+      <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+
+      <div class="cpa-field">
+        <label for="senhaAtual">Senha atual</label>
+        <input id="senhaAtual" name="senhaAtual" type="password" required autocomplete="current-password" class="cpa-input" />
+      </div>
+
+      <div class="cpa-field">
+        <label for="novaSenha">Nova senha</label>
+        <input id="novaSenha" name="novaSenha" type="password" required autocomplete="new-password" class="cpa-input" />
+        <p class="cpa-help" th:text="${passwordRules}">Use uma senha forte.</p>
+      </div>
+
+      <div class="cpa-field">
+        <label for="confirmacao">Confirmar nova senha</label>
+        <input id="confirmacao" name="confirmacao" type="password" required autocomplete="new-password" class="cpa-input" />
+      </div>
+
+      <div class="cpa-actions">
+        <a href="/home" class="cpa-button cpa-button-secondary" th:unless="${mustChangePassword}">Cancelar</a>
+        <button type="submit" class="cpa-button cpa-button-primary" data-loading-text="Salvando...">Salvar senha</button>
+      </div>
+    </form>
+  </section>
+</main>
+<script th:src="@{/js/cpa-ui.js}"></script>
+</body>
+</html>

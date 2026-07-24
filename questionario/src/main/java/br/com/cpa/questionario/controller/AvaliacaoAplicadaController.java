@@ -3,8 +3,12 @@ package br.com.cpa.questionario.controller;
 import br.com.cpa.questionario.model.*;
 import br.com.cpa.questionario.repository.*;
 import br.com.cpa.questionario.service.AvaliacaoEmailService;
+import br.com.cpa.questionario.service.AuditService;
 import br.com.cpa.questionario.service.InstituicaoScopeService;
 import br.com.cpa.questionario.service.QuestionnaireVersioningService;
+import br.com.cpa.questionario.service.ResultadoPrivacidadeService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,6 +29,8 @@ import java.util.*;
 @RequestMapping("/avaliacoes")
 public class AvaliacaoAplicadaController {
 
+    private static final Logger log = LoggerFactory.getLogger(AvaliacaoAplicadaController.class);
+
     private final AvaliacaoAplicadaRepository avaliacaoAplicadaRepository;
     private final QuestionnaireRepository questionnaireRepository;
     private final QuestionRepository questionRepository;
@@ -37,6 +43,8 @@ public class AvaliacaoAplicadaController {
     private final InstituicaoScopeService instituicaoScopeService;
     private final ParticipacaoAvaliacaoRepository participacaoAvaliacaoRepository;
     private final QuestionnaireVersioningService questionnaireVersioningService;
+    private final AuditService auditService;
+    private final ResultadoPrivacidadeService resultadoPrivacidadeService;
 
     // existente (por ITEM)
     private final ImportanciaItemRespostaRepository importanciaItemRespostaRepository;
@@ -56,6 +64,8 @@ public class AvaliacaoAplicadaController {
                                        InstituicaoScopeService instituicaoScopeService,
                                        ParticipacaoAvaliacaoRepository participacaoAvaliacaoRepository,
                                        QuestionnaireVersioningService questionnaireVersioningService,
+                                       AuditService auditService,
+                                       ResultadoPrivacidadeService resultadoPrivacidadeService,
                                        ImportanciaItemRespostaRepository importanciaItemRespostaRepository,
                                        ImportanciaQuestaoRespostaRepository importanciaQuestaoRespostaRepository) {
         this.avaliacaoAplicadaRepository = avaliacaoAplicadaRepository;
@@ -70,6 +80,8 @@ public class AvaliacaoAplicadaController {
         this.instituicaoScopeService = instituicaoScopeService;
         this.participacaoAvaliacaoRepository = participacaoAvaliacaoRepository;
         this.questionnaireVersioningService = questionnaireVersioningService;
+        this.auditService = auditService;
+        this.resultadoPrivacidadeService = resultadoPrivacidadeService;
         this.importanciaItemRespostaRepository = importanciaItemRespostaRepository;
         this.importanciaQuestaoRespostaRepository = importanciaQuestaoRespostaRepository;
     }
@@ -79,9 +91,11 @@ public class AvaliacaoAplicadaController {
     // ============================================================
     @GetMapping
     public String list(Model model) {
-        List<AvaliacaoAplicada> avaliacoes = instituicaoScopeService.getInstituicaoAtual()
-                .map(instituicao -> avaliacaoAplicadaRepository.findByInstituicaoId(instituicao.getId()))
-                .orElseGet(avaliacaoAplicadaRepository::findAll);
+        List<AvaliacaoAplicada> avaliacoes = instituicaoScopeService.isSuperAdmin()
+                ? avaliacaoAplicadaRepository.findAll()
+                : instituicaoScopeService.getInstituicaoAtual()
+                        .map(instituicao -> avaliacaoAplicadaRepository.findByInstituicaoId(instituicao.getId()))
+                        .orElseGet(List::of);
 
         // Atualiza status automaticamente (ABERTA -> ENCERRADA) se dataFim já passou
         LocalDateTime agora = LocalDateTime.now();
@@ -123,13 +137,13 @@ public class AvaliacaoAplicadaController {
         List<AvaliacaoAplicada> disponiveis = List.of();
 
         if (aluno.getTurma() != null) {
-            if (aluno.getInstituicao() != null) {
+            Instituicao instituicaoAluno = aluno.getInstituicao() != null
+                    ? aluno.getInstituicao()
+                    : aluno.getTurma().getInstituicao();
+            if (instituicaoAluno != null) {
                 disponiveis = avaliacaoAplicadaRepository
                         .findByTurmaIdAndStatusAndInstituicaoId(
-                                aluno.getTurma().getId(), StatusAvaliacao.ABERTA, aluno.getInstituicao().getId());
-            } else {
-                disponiveis = avaliacaoAplicadaRepository
-                        .findByTurmaIdAndStatus(aluno.getTurma().getId(), StatusAvaliacao.ABERTA);
+                                aluno.getTurma().getId(), StatusAvaliacao.ABERTA, instituicaoAluno.getId());
             }
 
             LocalDateTime agora = LocalDateTime.now();
@@ -192,9 +206,20 @@ public class AvaliacaoAplicadaController {
         avaliacao = avaliacaoAplicadaRepository.save(avaliacao);
 
         // envia os e-mails para todos os alunos ativos da turma
-        avaliacaoEmailService.enviarConvites(avaliacao);
+        int convitesEnviados = avaliacaoEmailService.enviarConvites(avaliacao);
+        auditService.registrar(
+                "AVALIACAO_CRIADA",
+                "AvaliacaoAplicada",
+                avaliacao.getId(),
+                avaliacao.getInstituicao(),
+                "turmaId=" + turma.getId()
+                        + "; questionarioVersaoId=" + questionarioPublicado.getId()
+                        + "; convitesEnviados=" + convitesEnviados);
 
-        redirectAttributes.addFlashAttribute("success", "Avaliação criada e e-mails enviados.");
+        String mensagem = convitesEnviados > 0
+                ? "Avaliação criada. Convites enviados: " + convitesEnviados + "."
+                : "Avaliação criada. Nenhum e-mail foi enviado porque o envio esta desativado ou nao ha alunos ativos.";
+        redirectAttributes.addFlashAttribute("success", mensagem);
         return "redirect:/avaliacoes";
     }
 
@@ -247,6 +272,12 @@ public class AvaliacaoAplicadaController {
         avaliacao.setStatus(status);
 
         avaliacaoAplicadaRepository.save(avaliacao);
+        auditService.registrar(
+                "AVALIACAO_ATUALIZADA",
+                "AvaliacaoAplicada",
+                avaliacao.getId(),
+                avaliacao.getInstituicao(),
+                "status=" + status + "; turmaId=" + turma.getId() + "; questionarioVersaoId=" + questionarioPublicado.getId());
 
         redirectAttributes.addFlashAttribute("success", "Avaliação atualizada com sucesso.");
         return "redirect:/avaliacoes";
@@ -270,13 +301,19 @@ public class AvaliacaoAplicadaController {
             // 2) Remove respostas (RespostaAluno -> Answer em cascata) e depois a avaliação
             respostaAlunoRepository.deleteByAvaliacaoAplicada(avaliacao);
             avaliacaoAplicadaRepository.delete(avaliacao);
+            auditService.registrar(
+                    "AVALIACAO_REMOVIDA_COM_EXPORTACAO",
+                    "AvaliacaoAplicada",
+                    avaliacao.getId(),
+                    avaliacao.getInstituicao(),
+                    "csv=" + csvPath);
 
             String msg = "Avaliação apagada com sucesso. "
                     + "Um arquivo CSV com as respostas foi gerado em: " + csvPath;
             redirectAttributes.addFlashAttribute("success", msg);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn("Erro ao gerar CSV antes de apagar avaliacao id={}", id, e);
             redirectAttributes.addFlashAttribute("error",
                     "Erro ao gerar o CSV e apagar a avaliação: " + e.getMessage());
         }
@@ -288,6 +325,7 @@ public class AvaliacaoAplicadaController {
         Long avaliacaoId = avaliacao.getId();
 
         List<RespostaAluno> respostasAluno = respostaAlunoRepository.findByAvaliacaoAplicadaId(avaliacaoId);
+        resultadoPrivacidadeService.validarExportacaoPermitida(respostasAluno.size());
 
         StringBuilder sb = new StringBuilder();
         sb.append("avaliacao_id;turma;questionario;aluno_ra;aluno_nome;data_resposta;")
@@ -619,16 +657,22 @@ public class AvaliacaoAplicadaController {
     }
 
     private List<Turma> getTurmasPermitidas() {
+        if (instituicaoScopeService.isSuperAdmin()) {
+            return turmaRepository.findAll();
+        }
         return instituicaoScopeService.getInstituicaoAtual()
                 .map(instituicao -> turmaRepository.findByInstituicaoId(instituicao.getId()))
-                .orElseGet(turmaRepository::findAll);
+                .orElseGet(List::of);
     }
 
     private List<Questionnaire> getQuestionariosPermitidos() {
+        if (instituicaoScopeService.isSuperAdmin()) {
+            return questionnaireRepository.findModelosEditaveisByStatus(StatusDisponibilidade.DISPONIVEL);
+        }
         return instituicaoScopeService.getInstituicaoAtual()
                 .map(instituicao -> questionnaireRepository.findModelosEditaveisByStatusAndInstituicaoId(
                         StatusDisponibilidade.DISPONIVEL, instituicao.getId()))
-                .orElseGet(() -> questionnaireRepository.findModelosEditaveisByStatus(StatusDisponibilidade.DISPONIVEL));
+                .orElseGet(List::of);
     }
 
     private void validarMesmoEscopo(Turma turma, Questionnaire questionnaire) {

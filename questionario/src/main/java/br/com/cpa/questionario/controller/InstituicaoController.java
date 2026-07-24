@@ -2,7 +2,6 @@ package br.com.cpa.questionario.controller;
 
 import br.com.cpa.questionario.model.Instituicao;
 import br.com.cpa.questionario.repository.InstituicaoRepository;
-import br.com.cpa.questionario.service.InstituicaoScopeService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,23 +15,18 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.List;
 
 @Controller
-@RequestMapping("/instituicoes")
+@RequestMapping({"/dev/instituicoes", "/instituicoes"})
 public class InstituicaoController {
 
     private final InstituicaoRepository instituicaoRepository;
-    private final InstituicaoScopeService instituicaoScopeService;
 
-    public InstituicaoController(InstituicaoRepository instituicaoRepository,
-                                 InstituicaoScopeService instituicaoScopeService) {
+    public InstituicaoController(InstituicaoRepository instituicaoRepository) {
         this.instituicaoRepository = instituicaoRepository;
-        this.instituicaoScopeService = instituicaoScopeService;
     }
 
     @GetMapping
     public String list(Model model) {
-        List<Instituicao> instituicoes = instituicaoScopeService.getInstituicaoAtual()
-                .map(List::of)
-                .orElseGet(instituicaoRepository::findAll);
+        List<Instituicao> instituicoes = instituicaoRepository.findAll();
         model.addAttribute("instituicoes", instituicoes);
         return "instituicao/list";
     }
@@ -47,7 +41,6 @@ public class InstituicaoController {
     public String edit(@PathVariable Long id, Model model) {
         Instituicao instituicao = instituicaoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Instituicao nao encontrada"));
-        instituicaoScopeService.validarAcesso(instituicao);
         model.addAttribute("instituicao", instituicao);
         return "instituicao/form";
     }
@@ -56,20 +49,13 @@ public class InstituicaoController {
     public String save(@ModelAttribute Instituicao instituicao,
                        RedirectAttributes redirectAttributes) {
         if (instituicao.getId() != null) {
-            Instituicao existente = instituicaoRepository.findById(instituicao.getId())
+            instituicaoRepository.findById(instituicao.getId())
                     .orElseThrow(() -> new IllegalArgumentException("Instituicao nao encontrada"));
-            instituicaoScopeService.validarAcesso(existente);
-        }
-
-        Instituicao atual = instituicaoScopeService.getInstituicaoAtual().orElse(null);
-        if (atual != null && !instituicaoScopeService.isSuperAdmin()) {
-            instituicao.setId(atual.getId());
-            instituicao.setIdentificadorInstitucional(atual.getIdentificadorInstitucional());
         }
 
         instituicaoRepository.save(instituicao);
         redirectAttributes.addFlashAttribute("success", "Instituicao salva com sucesso.");
-        return "redirect:/instituicoes";
+        return "redirect:/dev/instituicoes";
     }
 
     @PostMapping("/{id}/delete")
@@ -77,7 +63,6 @@ public class InstituicaoController {
                          RedirectAttributes redirectAttributes) {
         Instituicao instituicao = instituicaoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Instituicao nao encontrada"));
-        instituicaoScopeService.validarAcesso(instituicao);
 
         try {
             instituicaoRepository.delete(instituicao);
@@ -87,6 +72,6 @@ public class InstituicaoController {
                     "Nao foi possivel remover a instituicao porque existem dados vinculados.");
         }
 
-        return "redirect:/instituicoes";
+        return "redirect:/dev/instituicoes";
     }
 }

@@ -8,7 +8,10 @@ import br.com.cpa.questionario.repository.AlunoRepository;
 import br.com.cpa.questionario.repository.TurmaRepository;
 import br.com.cpa.questionario.repository.UserRepository;
 import br.com.cpa.questionario.service.InstituicaoScopeService;
+import br.com.cpa.questionario.service.PasswordPolicyService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -22,6 +25,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,22 +33,27 @@ import java.util.List;
 @RequestMapping("/alunos")
 public class AlunoController {
 
+    private static final Logger log = LoggerFactory.getLogger(AlunoController.class);
+
     private final AlunoRepository alunoRepository;
     private final TurmaRepository turmaRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final InstituicaoScopeService instituicaoScopeService;
+    private final PasswordPolicyService passwordPolicyService;
 
     public AlunoController(AlunoRepository alunoRepository,
                            TurmaRepository turmaRepository,
                            UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
-                           InstituicaoScopeService instituicaoScopeService) {
+                           InstituicaoScopeService instituicaoScopeService,
+                           PasswordPolicyService passwordPolicyService) {
         this.alunoRepository = alunoRepository;
         this.turmaRepository = turmaRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.instituicaoScopeService = instituicaoScopeService;
+        this.passwordPolicyService = passwordPolicyService;
     }
 
     // ===============================================================
@@ -60,9 +69,11 @@ public class AlunoController {
     // ===============================================================
     @GetMapping("/list")
     public String listarAlunos(Model model) {
-        List<Aluno> alunos = instituicaoScopeService.getInstituicaoAtual()
-                .map(instituicao -> alunoRepository.findByInstituicaoId(instituicao.getId()))
-                .orElseGet(alunoRepository::findAll);
+        List<Aluno> alunos = instituicaoScopeService.isSuperAdmin()
+                ? alunoRepository.findAll()
+                : instituicaoScopeService.getInstituicaoAtual()
+                        .map(instituicao -> alunoRepository.findByInstituicaoId(instituicao.getId()))
+                        .orElseGet(List::of);
         model.addAttribute("alunos", alunos);
         return "aluno/list"; // templates/aluno/list.html
     }
@@ -146,7 +157,7 @@ public class AlunoController {
     }
 
     // ===============================================================
-    // IMPORTAR ALUNOS (CSV) - login = RA, senha = CPF
+    // IMPORTAR ALUNOS (CSV) - login = RA, senha inicial = CPF
     // ===============================================================
     @PostMapping("/import")
     public String importarAlunos(@RequestParam("file") MultipartFile file,
@@ -163,6 +174,7 @@ public class AlunoController {
         instituicaoScopeService.validarAcesso(turma.getInstituicao());
 
         int criados = 0;
+        int atualizados = 0;
         int ignorados = 0;
         int linhaAtual = 0;
 
@@ -184,15 +196,15 @@ public class AlunoController {
                     continue;
                 }
 
-                String[] cols = line.split(";", -1);
+                String[] cols = separarColunasCsv(line);
                 if (cols.length < 3) {
                     ignorados++;
                     continue;
                 }
 
-                String nome = cols[0].trim();
-                String ra   = cols[1].trim();
-                String cpf  = cols[2].trim();
+                String nome = limparValorCsv(cols[0]);
+                String ra = limparValorCsv(cols[1]);
+                String cpf = passwordPolicyService.gerarSenhaInicialAluno(ra, cols[2]);
 
                 if (ra.isEmpty() || cpf.isEmpty()) {
                     ignorados++;
@@ -201,14 +213,20 @@ public class AlunoController {
 
                 String username = ra; // login = RA
 
-                boolean usernameJaExiste = userRepository.existsById(username);
-                boolean raJaExisteEmUser = userRepository.existsByRa(ra);
+                User userExistente = userRepository.findByUsername(username);
+                if (userExistente == null) {
+                    userExistente = userRepository.findByRa(ra);
+                }
                 boolean raJaExisteEmAluno = turma.getInstituicao() != null
                         ? alunoRepository.findByRaAndInstituicaoId(ra, turma.getInstituicao().getId()).isPresent()
                         : alunoRepository.findByRa(ra).isPresent();
 
-                if (usernameJaExiste || raJaExisteEmUser || raJaExisteEmAluno) {
-                    ignorados++;
+                if (userExistente != null || raJaExisteEmAluno) {
+                    if (atualizarSenhaTemporariaAluno(userExistente, cpf, turma)) {
+                        atualizados++;
+                    } else {
+                        ignorados++;
+                    }
                     continue;
                 }
 
@@ -223,8 +241,10 @@ public class AlunoController {
                 user.setRa(ra);
                 user.setInstituicao(turma.getInstituicao());
 
-                // senha = CPF criptografado
                 user.setPassword(passwordEncoder.encode(cpf));
+                user.setMustChangePassword(true);
+                user.setPasswordChangedAt(LocalDateTime.now());
+                user.resetLoginFailures();
 
                 userRepository.save(user);
 
@@ -245,22 +265,63 @@ public class AlunoController {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn("Erro ao importar alunos por CSV", e);
             redirectAttributes.addFlashAttribute("error",
                     "Erro ao importar: " + e.getMessage());
             return "redirect:/alunos/import";
         }
 
         redirectAttributes.addFlashAttribute("success",
-                "Importação concluída. Criados: " + criados + ", ignorados: " + ignorados + ".");
+                "Importacao concluida. Criados: " + criados
+                        + ", atualizados: " + atualizados
+                        + ", ignorados: " + ignorados + ".");
         redirectAttributes.addFlashAttribute("alunosImportados", alunosImportados);
 
         return "redirect:/alunos/import";
     }
 
     private List<Turma> getTurmasPermitidas() {
+        if (instituicaoScopeService.isSuperAdmin()) {
+            return turmaRepository.findAll();
+        }
         return instituicaoScopeService.getInstituicaoAtual()
                 .map(instituicao -> turmaRepository.findByInstituicaoId(instituicao.getId()))
-                .orElseGet(turmaRepository::findAll);
+                .orElseGet(List::of);
+    }
+
+    private String[] separarColunasCsv(String line) {
+        String[] cols = line.split(";", -1);
+        if (cols.length >= 3) {
+            return cols;
+        }
+        return line.split(",", -1);
+    }
+
+    private String limparValorCsv(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\uFEFF", "").trim();
+    }
+
+    private boolean atualizarSenhaTemporariaAluno(User user, String cpf, Turma turma) {
+        if (user == null || !ehAluno(user) || !user.isMustChangePassword()) {
+            return false;
+        }
+        if (user.getInstituicao() != null) {
+            instituicaoScopeService.validarAcesso(user.getInstituicao());
+        } else if (turma != null) {
+            user.setInstituicao(turma.getInstituicao());
+        }
+        user.setPassword(passwordEncoder.encode(cpf));
+        user.setPasswordChangedAt(LocalDateTime.now());
+        user.setMustChangePassword(true);
+        user.resetLoginFailures();
+        userRepository.save(user);
+        return true;
+    }
+
+    private boolean ehAluno(User user) {
+        return "ROLE_ALUNO".equals(user.getRole());
     }
 }

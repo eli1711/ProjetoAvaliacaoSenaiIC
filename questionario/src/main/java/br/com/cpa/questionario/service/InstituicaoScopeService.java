@@ -30,13 +30,16 @@ public class InstituicaoScopeService {
     }
 
     public Optional<Instituicao> getInstituicaoAtual() {
-        return getUsuarioAtual().map(User::getInstituicao);
+        Optional<User> usuarioAtual = getUsuarioAtual();
+        if (usuarioAtual.map(this::isSuperAdmin).orElse(false)) {
+            return Optional.empty();
+        }
+        return usuarioAtual.map(User::getInstituicao);
     }
 
     public boolean isSuperAdmin() {
         return getUsuarioAtual()
-                .map(User::getRole)
-                .map(ROLE_SUPER_ADMIN::equals)
+                .map(this::isSuperAdmin)
                 .orElse(false);
     }
 
@@ -46,7 +49,7 @@ public class InstituicaoScopeService {
         }
         Optional<Instituicao> atual = getInstituicaoAtual();
         if (atual.isEmpty()) {
-            return true;
+            return false;
         }
         return mesmaInstituicao(atual.get(), instituicao);
     }
@@ -61,7 +64,12 @@ public class InstituicaoScopeService {
         if (isSuperAdmin()) {
             return preferida;
         }
-        return getInstituicaoAtual().orElse(preferida);
+        return getInstituicaoAtual()
+                .orElseThrow(() -> new AccessDeniedException("Usuario sem instituicao nao pode criar registros institucionais."));
+    }
+
+    private boolean isSuperAdmin(User user) {
+        return user != null && ROLE_SUPER_ADMIN.equals(user.getRole());
     }
 
     private boolean mesmaInstituicao(Instituicao a, Instituicao b) {

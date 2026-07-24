@@ -17,6 +17,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,9 +27,12 @@ import java.util.List;
 public class SecurityConfig {
 
     private final UserRepository userRepository;
+    private final MustChangePasswordFilter mustChangePasswordFilter;
 
-    public SecurityConfig(UserRepository userRepository) {
+    public SecurityConfig(UserRepository userRepository,
+                          MustChangePasswordFilter mustChangePasswordFilter) {
         this.userRepository = userRepository;
+        this.mustChangePasswordFilter = mustChangePasswordFilter;
     }
 
     @Bean
@@ -39,13 +43,20 @@ public class SecurityConfig {
                                 "/login",
                                 "/perform_login",
                                 "/error",
+                                "/favicon.ico",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
                                 "/webjars/**",
+                                "/actuator/health",
+                                "/actuator/health/**",
+                                "/actuator/info",
                                 "/users/aluno/registro",
                                 "/users/aluno/registrar"
                         ).permitAll()
+
+                        .requestMatchers("/minha-conta/senha/**")
+                        .authenticated()
 
                         .requestMatchers("/avaliacoes/disponiveis/**")
                         .hasAuthority(Permissao.RESPONDER_AVALIACAO.name())
@@ -54,8 +65,8 @@ public class SecurityConfig {
                         .requestMatchers("/questionnaires/available/**")
                         .hasAuthority(Permissao.RESPONDER_AVALIACAO.name())
 
-                        .requestMatchers("/instituicoes/**")
-                        .hasAuthority(Permissao.GERENCIAR_INSTITUICOES.name())
+                        .requestMatchers("/dev", "/dev/**", "/instituicoes", "/instituicoes/**")
+                        .hasAuthority("ROLE_SUPER_ADMIN")
                         .requestMatchers("/users/**")
                         .hasAuthority(Permissao.GERENCIAR_USUARIOS.name())
                         .requestMatchers("/turmas/**", "/alunos/**")
@@ -67,12 +78,21 @@ public class SecurityConfig {
                         )
                         .requestMatchers("/avaliacoes/*/csv-template")
                         .hasAuthority(Permissao.EXPORTAR_RELATORIOS.name())
+                        .requestMatchers(
+                                "/analise/avaliacoes/export-resumo",
+                                "/analise/avaliacoes/export-perguntas"
+                        )
+                        .hasAuthority(Permissao.EXPORTAR_RELATORIOS.name())
                         .requestMatchers("/avaliacoes/*/respostas")
                         .hasAuthority(Permissao.VISUALIZAR_RESULTADOS.name())
                         .requestMatchers("/avaliacoes/**")
                         .hasAuthority(Permissao.PUBLICAR_AVALIACAO.name())
                         .requestMatchers("/analise/**")
                         .hasAuthority(Permissao.VISUALIZAR_RESULTADOS.name())
+                        .requestMatchers("/planos-acao/**")
+                        .hasAuthority(Permissao.GERENCIAR_PLANOS_ACAO.name())
+                        .requestMatchers("/auditoria/**")
+                        .hasAuthority(Permissao.GERENCIAR_USUARIOS.name())
 
                         .requestMatchers("/home").authenticated()
                         .anyRequest().authenticated()
@@ -89,7 +109,8 @@ public class SecurityConfig {
                         .logoutSuccessUrl("/login?logout=true")
                         .permitAll()
                 )
-                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
+                .addFilterAfter(mustChangePasswordFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -117,6 +138,7 @@ public class SecurityConfig {
                     .password(user.getPassword())
                     .authorities(authorities)
                     .disabled(user.getStatus() == StatusAluno.INATIVO)
+                    .accountLocked(user.isTemporarilyLocked())
                     .build();
         };
     }

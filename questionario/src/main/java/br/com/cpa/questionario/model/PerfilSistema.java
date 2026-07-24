@@ -9,7 +9,6 @@ public enum PerfilSistema {
     SUPER_ADMIN("ROLE_SUPER_ADMIN", EnumSet.allOf(Permissao.class)),
 
     ADMIN_INSTITUICAO("ROLE_ADMIN", EnumSet.of(
-            Permissao.GERENCIAR_INSTITUICOES,
             Permissao.GERENCIAR_USUARIOS,
             Permissao.GERENCIAR_TURMAS_CURSOS,
             Permissao.CRIAR_QUESTIONARIO,

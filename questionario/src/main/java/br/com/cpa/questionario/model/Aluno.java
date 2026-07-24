@@ -18,7 +18,7 @@ public class Aluno {
     @Column(nullable = false, unique = true)
     private String ra;
 
-    // CPF (usado como base para a senha inicial)
+    // CPF do aluno para identificacao cadastral.
     @Column(nullable = false, unique = true)
     private String cpf;
 

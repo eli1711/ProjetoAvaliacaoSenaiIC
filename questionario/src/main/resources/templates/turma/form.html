@@ -8,9 +8,62 @@
   <title th:text="${turma.id} == null ? 'Nova Turma - Sistema CPA' : 'Editar Turma - Sistema CPA'">
     Turma - Sistema CPA
   </title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" th:href="@{/css/cpa-ui.css}" />
 </head>
-<body class="bg-gradient-to-br from-slate-100 to-red-100 min-h-screen flex flex-col font-sans">
+<body class="cpa-body">
+<div class="cpa-page">
+  <div th:replace="~{fragments :: header('turmas', 'Turmas')}"></div>
+
+  <main class="cpa-main cpa-main-narrow">
+    <section class="cpa-hero">
+      <div>
+        <p class="cpa-kicker">Cadastro</p>
+        <h1 th:text="${turma.id} == null ? 'Nova turma' : 'Editar turma'">Nova turma</h1>
+        <p>Preencha os dados academicos usados para aplicar avaliacoes e vincular alunos.</p>
+      </div>
+    </section>
+
+    <section class="cpa-panel" style="margin-top:18px">
+      <form th:action="@{/turmas}" th:object="${turma}" method="post" class="cpa-form-grid">
+        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+        <input type="hidden" th:field="*{id}" />
+
+        <div class="cpa-field cpa-field-full">
+          <label for="nome">Nome da turma</label>
+          <input id="nome" type="text" th:field="*{nome}" required class="cpa-input" placeholder="Ex.: ADS 2 Semestre 2026" />
+        </div>
+
+        <div class="cpa-field cpa-field-full">
+          <label for="curso">Curso</label>
+          <input id="curso" type="text" th:field="*{curso}" required class="cpa-input" placeholder="Ex.: Analise e Desenvolvimento de Sistemas" />
+        </div>
+
+        <div class="cpa-field" style="grid-column: span 2">
+          <label for="semestre">Semestre</label>
+          <select id="semestre" th:field="*{semestre}" required class="cpa-select">
+            <option value="0" disabled th:selected="*{semestre} == 0">Selecione...</option>
+            <option value="1">1 semestre</option>
+            <option value="2">2 semestre</option>
+          </select>
+        </div>
+
+        <div class="cpa-field" style="grid-column: span 2">
+          <label for="ano">Ano letivo</label>
+          <input id="ano" type="number" th:field="*{ano}" min="2000" max="2100" required class="cpa-input" placeholder="Ex.: 2026" />
+        </div>
+
+        <div class="cpa-actions cpa-field-full" style="justify-content:flex-end; padding-top:8px">
+          <a th:href="@{/turmas}" class="cpa-button cpa-button-secondary">Cancelar</a>
+          <button type="submit" class="cpa-button cpa-button-primary" th:text="${turma.id} == null ? 'Salvar turma' : 'Atualizar turma'">Salvar turma</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <div th:replace="~{fragments :: footer}"></div>
+</div>
+<script th:src="@{/js/cpa-ui.js}"></script>
+<template hidden aria-hidden="true" th:remove="all">
 
 <!-- Cabeçalho padrão vermelho -->
 <header class="bg-red-700 text-white shadow">
@@ -229,5 +282,6 @@
   </div>
 </footer>
 
+</template>
 </body>
 </html>

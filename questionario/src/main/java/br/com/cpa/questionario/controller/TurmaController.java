@@ -8,6 +8,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/turmas")
 public class TurmaController {
@@ -24,9 +26,11 @@ public class TurmaController {
     // LISTA TODAS AS TURMAS
     @GetMapping
     public String list(Model model) {
-        var turmas = instituicaoScopeService.getInstituicaoAtual()
-                .map(instituicao -> turmaRepository.findByInstituicaoId(instituicao.getId()))
-                .orElseGet(turmaRepository::findAll);
+        var turmas = instituicaoScopeService.isSuperAdmin()
+                ? turmaRepository.findAll()
+                : instituicaoScopeService.getInstituicaoAtual()
+                        .map(instituicao -> turmaRepository.findByInstituicaoId(instituicao.getId()))
+                        .orElseGet(List::of);
         model.addAttribute("turmas", turmas);
         return "turma/list"; // templates/turma/list.html
     }

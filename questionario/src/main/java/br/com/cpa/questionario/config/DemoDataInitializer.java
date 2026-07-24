@@ -14,6 +14,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
+
 @Configuration
 @ConditionalOnProperty(prefix = "app.demo-data", name = "enabled", havingValue = "true")
 public class DemoDataInitializer {
@@ -91,6 +93,9 @@ public class DemoDataInitializer {
         user.setTurma(turma);
         user.setInstituicao(instituicao);
         user.setStatus(StatusAluno.ATIVO);
+        user.setPasswordChangedAt(LocalDateTime.now());
+        user.setMustChangePassword(false);
+        user.resetLoginFailures();
         userRepository.save(user);
     }
 

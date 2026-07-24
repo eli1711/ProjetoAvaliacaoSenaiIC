@@ -3,14 +3,15 @@ services:
   db:
     image: mysql:8.0
     container_name: cpa-mysql
-    restart: always
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: questionario_db
-      MYSQL_USER: cpa_user
-      MYSQL_PASSWORD: cpa_pass
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?defina MYSQL_ROOT_PASSWORD no .env}
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST:-%}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-questionario_db}
+      MYSQL_USER: ${MYSQL_USER:-cpa_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?defina MYSQL_PASSWORD no .env}
     ports:
-      - "3307:3306"
+      - "${MYSQL_PORT:-3307}:3306"
     command: [
       "--default-authentication-plugin=mysql_native_password",
       "--character-set-server=utf8mb4",
@@ -18,20 +19,62 @@ services:
     ]
     volumes:
       - db_data:/var/lib/mysql
+      - ./docker/mysql/init-app-user.sh:/usr/local/bin/cpa-db-healthcheck.sh:ro
+    networks:
+      - cpa-network
+    healthcheck:
+      test: ["CMD-SHELL", "sh /usr/local/bin/cpa-db-healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   app:
     build: .
     container_name: cpa-app
-    restart: always
+    restart: unless-stopped
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/questionario_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Sao_Paulo
-      SPRING_DATASOURCE_USERNAME: cpa_user
-      SPRING_DATASOURCE_PASSWORD: cpa_pass
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:-questionario_db}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Sao_Paulo
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-cpa_user}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:?defina MYSQL_PASSWORD no .env}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_FLYWAY_ENABLED: ${SPRING_FLYWAY_ENABLED:-true}
+      APP_DEMO_DATA_ENABLED: ${APP_DEMO_DATA_ENABLED:-false}
+      APP_DEV_USER_ENABLED: ${APP_DEV_USER_ENABLED:-false}
+      APP_DEV_USERNAME: ${APP_DEV_USERNAME:-dev}
+      APP_DEV_PASSWORD: ${APP_DEV_PASSWORD:-}
+      APP_DEV_EMAIL: ${APP_DEV_EMAIL:-dev@sistema.local}
+      APP_DEV_NAME: ${APP_DEV_NAME:-Desenvolvedor do Sistema}
+      APP_PRIVACIDADE_MINIMO_RESPOSTAS_GRUPO: ${APP_PRIVACIDADE_MINIMO_RESPOSTAS_GRUPO:-5}
+      APP_SECURITY_LOGIN_MAX_FAILED_ATTEMPTS: ${APP_SECURITY_LOGIN_MAX_FAILED_ATTEMPTS:-5}
+      APP_SECURITY_LOGIN_LOCK_MINUTES: ${APP_SECURITY_LOGIN_LOCK_MINUTES:-15}
+      APP_SECURITY_PASSWORD_MIN_LENGTH: ${APP_SECURITY_PASSWORD_MIN_LENGTH:-10}
+      APP_SECURITY_PASSWORD_MAX_LENGTH: ${APP_SECURITY_PASSWORD_MAX_LENGTH:-128}
+      APP_SECURITY_PASSWORD_MIN_CATEGORIES: ${APP_SECURITY_PASSWORD_MIN_CATEGORIES:-3}
+      APP_EMAIL_CONVITES_ENABLED: ${APP_EMAIL_CONVITES_ENABLED:-false}
+      APP_EMAIL_BASE_URL: ${APP_EMAIL_BASE_URL:-http://localhost:${APP_PORT:-8098}}
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+      SPRING_MAIL_SMTP_AUTH: ${SPRING_MAIL_SMTP_AUTH:-true}
+      SPRING_MAIL_SMTP_STARTTLS_ENABLE: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE:-true}
     ports:
-      - "8098:8080"
+      - "${APP_PORT:-8098}:8080"
+    networks:
+      - cpa-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/actuator/health/readiness || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
 
 volumes:
   db_data:
+
+networks:
+  cpa-network:
+    driver: bridge

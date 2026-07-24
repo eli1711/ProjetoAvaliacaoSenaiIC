@@ -2,11 +2,63 @@
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <title>Avaliações Aplicadas</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" th:href="@{/css/cpa-ui.css}" />
 </head>
 
-<body class="bg-slate-100 min-h-screen flex flex-col">
+<body class="cpa-body">
+<div class="cpa-page">
+  <div th:replace="~{fragments :: header('questionnaires', 'Questionarios')}"></div>
+
+  <main class="cpa-main">
+    <section class="cpa-hero">
+      <div>
+        <p class="cpa-kicker">Respostas do modelo</p>
+        <h1 th:text="'Respostas - ' + ${questionnaire.name}">Respostas do questionario</h1>
+        <p>Respostas vinculadas diretamente ao modelo, quando existirem fora de uma avaliacao aplicada.</p>
+      </div>
+      <div class="cpa-actions">
+        <a th:href="@{/questionnaires/{id}(id=${questionnaire.id})}" class="cpa-button cpa-button-secondary">Voltar</a>
+      </div>
+    </section>
+
+    <section class="cpa-panel" style="margin-top:18px">
+      <div th:if="${#lists.isEmpty(questions)}" class="cpa-empty-panel">Este questionario nao possui perguntas cadastradas.</div>
+
+      <div th:if="${!#lists.isEmpty(questions)}" class="cpa-result-list">
+        <article th:each="q, iter : ${questions}" class="cpa-result-item">
+          <p class="cpa-kicker" th:text="'Pergunta ' + ${iter.index + 1}">Pergunta 1</p>
+          <h2 class="cpa-result-title" th:text="${q.text}">Texto da pergunta</h2>
+
+          <div class="cpa-table-wrap">
+            <table class="cpa-table">
+              <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Resposta</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:each="a : ${answersByQuestion[q.id]}">
+                <td data-label="Usuario" th:text="${a.userUsername != null ? a.userUsername : 'Anonimo'}">usuario</td>
+                <td data-label="Resposta" style="white-space:pre-line" th:text="${a.response}">Resposta</td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(answersByQuestion[q.id])}">
+                <td colspan="2" data-label=""><div class="cpa-empty">Nenhuma resposta registrada para esta pergunta.</div></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <div th:replace="~{fragments :: footer}"></div>
+</div>
+<script th:src="@{/js/cpa-ui.js}"></script>
+<template hidden aria-hidden="true" th:remove="all">
 
 <header class="bg-red-700 text-white shadow">
     <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
@@ -73,5 +125,6 @@
 
 </main>
 
+</template>
 </body>
 </html>

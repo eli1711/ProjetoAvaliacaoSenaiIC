@@ -1,113 +1,116 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+<html lang="pt-BR"
+      xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>Instituicao - Sistema CPA</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" th:href="@{/css/cpa-ui.css}" />
 </head>
-<body class="bg-slate-100 min-h-screen flex flex-col font-sans">
-<header class="bg-red-700 text-white shadow">
-  <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center gap-4">
-    <a href="/instituicoes" class="font-semibold tracking-tight text-lg flex items-center gap-3">
-      <span class="inline-flex items-center justify-center h-9 w-9 rounded-md bg-red-800 text-xs font-bold">CPA</span>
-      <span>Instituicao</span>
-    </a>
-    <form th:action="@{/logout}" method="post" class="inline" sec:authorize="isAuthenticated()">
-      <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-      <button type="submit" class="px-3 py-1.5 rounded-full bg-red-900 hover:bg-red-800 text-[11px] font-semibold">
-        Sair
+<body class="cpa-body">
+<div class="cpa-page">
+  <header class="cpa-header">
+    <div class="cpa-header-inner">
+      <a href="/dev/instituicoes" class="cpa-brand">
+        <span class="cpa-brand-mark">CPA</span>
+        <span>
+          <span class="cpa-brand-kicker">Painel dev</span>
+          <span class="cpa-brand-title">Instituicao</span>
+        </span>
+      </a>
+      <button class="cpa-menu-button" type="button" aria-label="Abrir menu" aria-expanded="false" data-cpa-menu-button="main-nav">
+        <span></span><span></span><span></span>
       </button>
-    </form>
-  </div>
-</header>
+      <nav id="main-nav" class="cpa-nav" aria-label="Navegacao principal">
+        <a href="/dev" class="cpa-nav-link">Dev</a>
+        <a href="/dev/instituicoes" class="cpa-nav-link is-active">Instituicoes</a>
+        <a href="/users" class="cpa-nav-link">Usuarios</a>
+        <a href="/auditoria" class="cpa-nav-link">Auditoria</a>
+        <form th:action="@{/logout}" method="post" class="cpa-logout-form" sec:authorize="isAuthenticated()">
+          <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+          <button type="submit" class="cpa-button cpa-button-secondary cpa-button-small">Sair</button>
+        </form>
+      </nav>
+    </div>
+  </header>
 
-<main class="flex-1">
-  <div class="max-w-4xl mx-auto px-4 py-8">
-    <form th:action="@{/instituicoes}" th:object="${instituicao}" method="post"
-          class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-5">
-      <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-      <input type="hidden" th:field="*{id}" />
-
+  <main class="cpa-main cpa-main-narrow">
+    <section class="cpa-hero">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">Dados da Instituicao</h1>
-        <p class="text-sm text-slate-600 mt-1">Essas informacoes identificam a instituicao nos filtros e relatorios.</p>
+        <p class="cpa-kicker">Cadastro institucional</p>
+        <h1>Dados da instituicao</h1>
+        <p>Essas informacoes identificam a instituicao nos filtros, usuarios e relatorios.</p>
       </div>
+    </section>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label for="nome" class="block text-sm font-medium text-slate-700 mb-1">Nome</label>
-          <input id="nome" type="text" th:field="*{nome}" required
-                 class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500"/>
+    <section class="cpa-panel" style="margin-top:18px">
+      <form th:action="@{/dev/instituicoes}" th:object="${instituicao}" method="post" class="cpa-form-grid" data-cpa-loading>
+        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+        <input type="hidden" th:field="*{id}" />
+
+        <div class="cpa-field" style="grid-column:span 2">
+          <label for="nome">Nome</label>
+          <input id="nome" type="text" th:field="*{nome}" required class="cpa-input" />
         </div>
 
-        <div>
-          <label for="identificadorInstitucional" class="block text-sm font-medium text-slate-700 mb-1">Identificador institucional</label>
-          <input id="identificadorInstitucional" type="text" th:field="*{identificadorInstitucional}" required
-                 class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500"/>
+        <div class="cpa-field" style="grid-column:span 2">
+          <label for="identificadorInstitucional">Identificador institucional</label>
+          <input id="identificadorInstitucional" type="text" th:field="*{identificadorInstitucional}" required class="cpa-input" />
         </div>
 
-        <div>
-          <label for="cnpj" class="block text-sm font-medium text-slate-700 mb-1">CNPJ</label>
-          <input id="cnpj" type="text" th:field="*{cnpj}"
-                 class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500"/>
+        <div class="cpa-field" style="grid-column:span 2">
+          <label for="cnpj">CNPJ</label>
+          <input id="cnpj" type="text" th:field="*{cnpj}" class="cpa-input" />
         </div>
 
-        <div>
-          <label for="periodoLetivoAtual" class="block text-sm font-medium text-slate-700 mb-1">Periodo letivo atual</label>
-          <input id="periodoLetivoAtual" type="text" th:field="*{periodoLetivoAtual}"
-                 class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500"/>
+        <div class="cpa-field" style="grid-column:span 2">
+          <label for="periodoLetivoAtual">Periodo letivo atual</label>
+          <input id="periodoLetivoAtual" type="text" th:field="*{periodoLetivoAtual}" class="cpa-input" />
         </div>
 
-        <div class="md:col-span-2">
-          <label for="responsavelInstitucional" class="block text-sm font-medium text-slate-700 mb-1">Responsavel institucional</label>
-          <input id="responsavelInstitucional" type="text" th:field="*{responsavelInstitucional}"
-                 class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500"/>
+        <div class="cpa-field cpa-field-full">
+          <label for="responsavelInstitucional">Responsavel institucional</label>
+          <input id="responsavelInstitucional" type="text" th:field="*{responsavelInstitucional}" class="cpa-input" />
         </div>
 
-        <div class="md:col-span-2">
-          <label for="contatos" class="block text-sm font-medium text-slate-700 mb-1">Contatos</label>
-          <textarea id="contatos" rows="2" th:field="*{contatos}"
-                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500"></textarea>
+        <div class="cpa-field cpa-field-full">
+          <label for="contatos">Contatos</label>
+          <textarea id="contatos" rows="2" th:field="*{contatos}" class="cpa-textarea"></textarea>
         </div>
 
-        <div class="md:col-span-2">
-          <label for="endereco" class="block text-sm font-medium text-slate-700 mb-1">Endereco</label>
-          <textarea id="endereco" rows="2" th:field="*{endereco}"
-                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500"></textarea>
+        <div class="cpa-field cpa-field-full">
+          <label for="endereco">Endereco</label>
+          <textarea id="endereco" rows="2" th:field="*{endereco}" class="cpa-textarea"></textarea>
         </div>
 
-        <div>
-          <label for="logoUrl" class="block text-sm font-medium text-slate-700 mb-1">URL da logo</label>
-          <input id="logoUrl" type="url" th:field="*{logoUrl}"
-                 class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500"/>
+        <div class="cpa-field" style="grid-column:span 2">
+          <label for="logoUrl">URL da logo</label>
+          <input id="logoUrl" type="url" th:field="*{logoUrl}" class="cpa-input" />
         </div>
 
-        <div class="flex items-end">
-          <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" th:field="*{ativo}" class="h-4 w-4 rounded border-slate-300 text-red-700"/>
+        <div class="cpa-field" style="grid-column:span 2;align-content:end">
+          <label class="cpa-option" style="min-height:42px">
+            <input type="checkbox" th:field="*{ativo}" />
             Instituicao ativa
           </label>
         </div>
 
-        <div class="md:col-span-2">
-          <label for="dadosRelatorio" class="block text-sm font-medium text-slate-700 mb-1">Dados para relatorio</label>
-          <textarea id="dadosRelatorio" rows="3" th:field="*{dadosRelatorio}"
-                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500"></textarea>
+        <div class="cpa-field cpa-field-full">
+          <label for="dadosRelatorio">Dados para relatorio</label>
+          <textarea id="dadosRelatorio" rows="3" th:field="*{dadosRelatorio}" class="cpa-textarea"></textarea>
         </div>
-      </div>
 
-      <div class="flex justify-end gap-3 pt-2">
-        <a href="/instituicoes" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-          Cancelar
-        </a>
-        <button type="submit" class="rounded-lg bg-red-700 px-5 py-2 text-sm font-semibold text-white hover:bg-red-800">
-          Salvar
-        </button>
-      </div>
-    </form>
-  </div>
-</main>
+        <div class="cpa-actions cpa-field-full" style="justify-content:flex-end">
+          <a href="/dev/instituicoes" class="cpa-button cpa-button-secondary">Cancelar</a>
+          <button type="submit" class="cpa-button cpa-button-primary" data-loading-text="Salvando...">Salvar</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <footer class="cpa-footer"><div class="cpa-footer-inner">Sistema de Avaliacao CPA</div></footer>
+</div>
+<script th:src="@{/js/cpa-ui.js}"></script>
 </body>
 </html>

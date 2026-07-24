@@ -8,10 +8,81 @@
   <title th:text="'Visualizar Questionário: ' + ${questionnaire.name}">
     Visualizar Questionário
   </title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" th:href="@{/css/cpa-ui.css}" />
 </head>
 
-<body class="bg-gradient-to-br from-slate-100 to-red-100 min-h-screen flex flex-col font-sans">
+<body class="cpa-body">
+<div class="cpa-page">
+  <div th:replace="~{fragments :: header('questionnaires', 'Questionarios')}"></div>
+
+  <main class="cpa-main">
+    <section class="cpa-hero">
+      <div>
+        <p class="cpa-kicker">Modelo de questionario</p>
+        <h1 th:text="${questionnaire.name}">Questionario</h1>
+        <p th:text="${questionnaire.description != null and !questionnaire.description.isBlank() ? questionnaire.description : 'Revise os metadados e as perguntas cadastradas neste modelo.'}">
+          Revise os metadados e as perguntas cadastradas neste modelo.
+        </p>
+      </div>
+      <div class="cpa-actions">
+        <a th:href="@{/questionnaires/{id}/questions/new(id=${questionnaire.id})}" class="cpa-button cpa-button-primary" th:if="${!questionnaire.bloqueado}">Nova pergunta</a>
+        <a th:href="@{/questionnaires/{id}/answers(id=${questionnaire.id})}" class="cpa-button cpa-button-info">Ver respostas</a>
+        <a href="/questionnaires" class="cpa-button cpa-button-secondary">Voltar</a>
+      </div>
+    </section>
+
+    <section class="cpa-panel" style="margin-top:18px">
+      <div class="cpa-detail-grid">
+        <div class="cpa-detail">
+          <p class="cpa-detail-label">Semestre</p>
+          <p class="cpa-detail-value" th:text="${questionnaire.semester}">1</p>
+        </div>
+        <div class="cpa-detail">
+          <p class="cpa-detail-label">Ano</p>
+          <p class="cpa-detail-value" th:text="${questionnaire.year}">2026</p>
+        </div>
+        <div class="cpa-detail">
+          <p class="cpa-detail-label">Status</p>
+          <p class="cpa-detail-value" th:text="${questionnaire.status}">DISPONIVEL</p>
+        </div>
+        <div class="cpa-detail">
+          <p class="cpa-detail-label">Versao</p>
+          <p class="cpa-detail-value" th:text="${questionnaire.bloqueado ? 'Publicada' : 'Editavel'}">Editavel</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="cpa-panel" style="margin-top:18px">
+      <div class="cpa-panel-header">
+        <div>
+          <h2 class="cpa-panel-title">Perguntas</h2>
+          <p class="cpa-panel-subtitle">Itens cadastrados para este modelo.</p>
+        </div>
+      </div>
+
+      <div th:if="${#lists.isEmpty(questions)}" class="cpa-empty-panel">Nenhuma pergunta cadastrada.</div>
+
+      <ul th:if="${!#lists.isEmpty(questions)}" class="cpa-list">
+        <li th:each="q, iter : ${questions}" class="cpa-list-item">
+          <div>
+            <p class="cpa-kicker" th:text="'Pergunta ' + ${iter.index + 1}">Pergunta 1</p>
+            <p class="cpa-list-title" th:text="${q.text}">Texto da pergunta</p>
+            <div class="cpa-list-meta">
+              <span th:text="${q.type}">QUALITATIVA</span>
+              <span class="cpa-meta-dot"></span>
+              <span th:text="${q.itemAvaliacao != null ? q.itemAvaliacao.descricao : 'Sem item'}">Item</span>
+              <span th:if="${q.type?.toString() == 'QUANTITATIVA'}" class="cpa-badge cpa-badge-info">Pontuacao <span th:text="${q.score}">4</span></span>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </section>
+  </main>
+
+  <div th:replace="~{fragments :: footer}"></div>
+</div>
+<script th:src="@{/js/cpa-ui.js}"></script>
+<template hidden aria-hidden="true" th:remove="all">
 
 <!-- Cabeçalho padrão vermelho -->
 <header class="bg-red-700 text-white shadow">
@@ -187,5 +258,6 @@
   </div>
 </footer>
 
+</template>
 </body>
 </html>

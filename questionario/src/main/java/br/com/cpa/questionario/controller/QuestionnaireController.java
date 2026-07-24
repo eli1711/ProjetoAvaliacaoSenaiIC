@@ -59,19 +59,23 @@ public class QuestionnaireController {
 
     @GetMapping
     public String listQuestionnaires(Model model) {
-        var questionnaires = instituicaoScopeService.getInstituicaoAtual()
-                .map(instituicao -> questionnaireRepository.findModelosEditaveisByInstituicaoId(instituicao.getId()))
-                .orElseGet(questionnaireRepository::findModelosEditaveis);
+        var questionnaires = instituicaoScopeService.isSuperAdmin()
+                ? questionnaireRepository.findModelosEditaveis()
+                : instituicaoScopeService.getInstituicaoAtual()
+                        .map(instituicao -> questionnaireRepository.findModelosEditaveisByInstituicaoId(instituicao.getId()))
+                        .orElseGet(List::of);
         model.addAttribute("questionnaires", questionnaires);
         return "questionnaire/list";
     }
 
     @GetMapping("/available")
     public String availableQuestionnaires(Model model) {
-        var questionnaires = instituicaoScopeService.getInstituicaoAtual()
-                .map(instituicao -> questionnaireRepository.findModelosEditaveisByStatusAndInstituicaoId(
-                        StatusDisponibilidade.DISPONIVEL, instituicao.getId()))
-                .orElseGet(() -> questionnaireRepository.findModelosEditaveisByStatus(StatusDisponibilidade.DISPONIVEL));
+        var questionnaires = instituicaoScopeService.isSuperAdmin()
+                ? questionnaireRepository.findModelosEditaveisByStatus(StatusDisponibilidade.DISPONIVEL)
+                : instituicaoScopeService.getInstituicaoAtual()
+                        .map(instituicao -> questionnaireRepository.findModelosEditaveisByStatusAndInstituicaoId(
+                                StatusDisponibilidade.DISPONIVEL, instituicao.getId()))
+                        .orElseGet(List::of);
         model.addAttribute("questionnaires", questionnaires);
         return "questionnaire/available";
     }

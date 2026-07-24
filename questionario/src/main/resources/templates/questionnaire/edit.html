@@ -6,10 +6,69 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title th:text="${questionnaire.id} != null ? 'Editar Questionário' : 'Novo Questionário'">Questionário</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" th:href="@{/css/cpa-ui.css}" />
 </head>
 
-<body class="bg-gradient-to-br from-slate-100 to-red-100 min-h-screen flex flex-col font-sans">
+<body class="cpa-body">
+<div class="cpa-page">
+  <div th:replace="~{fragments :: header('questionnaires', 'Questionarios')}"></div>
+
+  <main class="cpa-main cpa-main-narrow">
+    <section class="cpa-hero">
+      <div>
+        <p class="cpa-kicker" th:text="${questionnaire.id} != null ? 'Editar modelo' : 'Novo modelo'">Questionario</p>
+        <h1 th:text="${questionnaire.id} != null ? 'Editar questionario' : 'Novo questionario'">Questionario</h1>
+        <p>Defina identificacao, periodo de referencia e disponibilidade do modelo.</p>
+      </div>
+    </section>
+
+    <section class="cpa-panel" style="margin-top:18px">
+      <form th:action="${questionnaire.id} != null ? @{/questionnaires/{id}/edit(id=${questionnaire.id})} : @{/questionnaires/save}"
+            method="post"
+            th:object="${questionnaire}"
+            class="cpa-form-grid">
+        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+
+        <div class="cpa-field cpa-field-full">
+          <label for="name">Nome</label>
+          <input type="text" id="name" th:field="*{name}" required class="cpa-input" />
+        </div>
+
+        <div class="cpa-field cpa-field-full">
+          <label for="description">Descricao</label>
+          <textarea id="description" th:field="*{description}" class="cpa-textarea"></textarea>
+        </div>
+
+        <div class="cpa-field" style="grid-column: span 2">
+          <label for="semester">Semestre</label>
+          <input type="number" id="semester" th:field="*{semester}" min="1" max="2" required class="cpa-input" />
+        </div>
+
+        <div class="cpa-field" style="grid-column: span 2">
+          <label for="year">Ano</label>
+          <input type="number" id="year" th:field="*{year}" min="2000" max="2100" required class="cpa-input" />
+        </div>
+
+        <div class="cpa-field cpa-field-full">
+          <label for="status">Status</label>
+          <select id="status" th:field="*{status}" required class="cpa-select">
+            <option value="DISPONIVEL">Disponivel</option>
+            <option value="NAO_DISPONIVEL">Nao disponivel</option>
+          </select>
+        </div>
+
+        <div class="cpa-actions cpa-field-full" style="justify-content:flex-end; padding-top:8px">
+          <a href="/questionnaires" class="cpa-button cpa-button-secondary">Cancelar</a>
+          <button type="submit" class="cpa-button cpa-button-primary">Salvar</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <div th:replace="~{fragments :: footer}"></div>
+</div>
+<script th:src="@{/js/cpa-ui.js}"></script>
+<template hidden aria-hidden="true" th:remove="all">
 
 <!-- Cabeçalho padrão vermelho -->
 <header class="bg-red-700 text-white shadow">
@@ -190,5 +249,6 @@
     © 2025 Sistema de Avaliação CPA
   </div>
 </footer>
+</template>
 </body>
 </html>

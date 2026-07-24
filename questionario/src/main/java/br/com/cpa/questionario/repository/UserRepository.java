@@ -11,6 +11,8 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     User findByUsername(String username);
 
+    User findByRa(String ra);
+
     boolean existsByRa(String ra);   // usado no import pra evitar duplicidade
 
     List<User> findByInstituicaoId(Long instituicaoId);

@@ -5,189 +5,105 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Usuários Cadastrados</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Usuarios - Sistema CPA</title>
+  <link rel="stylesheet" th:href="@{/css/cpa-ui.css}" />
 </head>
-
-<body class="bg-gradient-to-br from-slate-100 to-red-100 min-h-screen flex flex-col font-sans">
-
-<!-- Cabeçalho padrão -->
-<header class="bg-red-700 text-white shadow">
-  <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center gap-4">
-
-    <a href="/home" class="font-semibold tracking-tight text-lg flex items-center gap-3">
-      <span class="inline-flex items-center justify-center h-9 w-9 rounded-md bg-red-800 text-xs font-bold">
-        CPA
-      </span>
-      <div class="flex flex-col leading-tight">
-        <span class="text-sm uppercase tracking-[0.2em] text-red-100">Sistema CPA</span>
-        <span class="text-base">Avaliações Institucionais</span>
-      </div>
-    </a>
-
-    <!-- MENU ADMIN / GESTOR -->
-    <nav class="hidden md:flex items-center gap-5 text-xs font-medium"
-         sec:authorize="hasAnyAuthority('ROLE_ADMIN','ROLE_GESTOR')">
-      <a href="/avaliacoes" class="hover:text-red-100 transition">Avaliações</a>
-      <a href="/questionnaires" class="hover:text-red-100 transition">Questionários</a>
-      <a href="/users" class="hover:text-red-100 transition">Usuários</a>
-      <a href="/turmas" class="hover:text-red-100 transition">Turmas</a>
-      <a href="/analise/avaliacoes" class="hover:text-red-100 transition">Análises</a>
-      <a href="/alunos" class="hover:text-red-100 transition">Alunos</a>
-
-      <form th:action="@{/logout}" method="post" class="inline">
-        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-        <button
-          type="submit"
-          class="ml-2 px-3 py-1.5 rounded-full bg-red-900 hover:bg-red-800 text-[11px] font-semibold shadow-sm transition">
-          Sair
-        </button>
-      </form>
-    </nav>
-
-    <!-- MENU ALUNO -->
-    <nav class="hidden md:flex items-center gap-4 text-xs font-medium"
-         sec:authorize="hasAuthority('ROLE_ALUNO')">
-      <a href="/avaliacoes/disponiveis" class="hover:text-red-100 transition">
-        Minhas Avaliações
+<body class="cpa-body">
+<div class="cpa-page">
+  <header class="cpa-header">
+    <div class="cpa-header-inner">
+      <a href="/home" class="cpa-brand">
+        <span class="cpa-brand-mark">CPA</span>
+        <span>
+          <span class="cpa-brand-kicker">Sistema CPA</span>
+          <span class="cpa-brand-title">Usuarios</span>
+        </span>
       </a>
-      <form th:action="@{/logout}" method="post" class="inline">
-        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-        <button
-          type="submit"
-          class="ml-2 px-3 py-1.5 rounded-full bg-red-900 hover:bg-red-800 text-[11px] font-semibold shadow-sm transition">
-          Sair
-        </button>
-      </form>
-    </nav>
-
-    <!-- Versão compacta (mobile) -->
-    <div class="flex md:hidden items-center gap-2">
-      <nav sec:authorize="hasAuthority('ROLE_ALUNO')">
-        <a href="/avaliacoes/disponiveis"
-           class="text-xs px-3 py-1.5 rounded-full bg-red-800 hover:bg-red-900 transition">
-          Minhas Avaliações
-        </a>
+      <button class="cpa-menu-button" type="button" aria-label="Abrir menu" aria-expanded="false" data-cpa-menu-button="main-nav">
+        <span></span><span></span><span></span>
+      </button>
+      <nav id="main-nav" class="cpa-nav" aria-label="Navegacao principal">
+        <a href="/dev" class="cpa-nav-link" sec:authorize="hasAuthority('ROLE_SUPER_ADMIN')">Dev</a>
+        <a href="/home" class="cpa-nav-link">Inicio</a>
+        <a href="/avaliacoes" class="cpa-nav-link">Avaliacoes</a>
+        <a href="/questionnaires" class="cpa-nav-link">Questionarios</a>
+        <a href="/users" class="cpa-nav-link is-active">Usuarios</a>
+        <a href="/turmas" class="cpa-nav-link">Turmas</a>
+        <a href="/alunos" class="cpa-nav-link">Alunos</a>
+        <form th:action="@{/logout}" method="post" class="cpa-logout-form" sec:authorize="isAuthenticated()">
+          <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+          <button type="submit" class="cpa-button cpa-button-secondary cpa-button-small">Sair</button>
+        </form>
       </nav>
-      <form th:action="@{/logout}" method="post" class="inline" sec:authorize="isAuthenticated()">
-        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-        <button
-          type="submit"
-          class="px-3 py-1.5 rounded-full bg-red-900 hover:bg-red-800 text-[11px] font-semibold shadow-sm transition">
-          Sair
-        </button>
-      </form>
     </div>
+  </header>
 
-  </div>
-</header>
-
-<main class="flex-1 flex items-start justify-center px-6 py-10">
-  <div class="bg-white shadow-xl rounded-2xl p-8 md:p-10 w-full max-w-5xl border border-red-100">
-
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+  <main class="cpa-main">
+    <section class="cpa-hero">
       <div>
-        <div class="inline-flex items-center gap-2 rounded-full bg-red-50 text-red-700 px-3 py-1 mb-2">
-          <span class="inline-block h-2 w-2 rounded-full bg-red-600"></span>
-          <span class="text-[11px] font-semibold tracking-wide uppercase">
-            Gestão de usuários
-          </span>
-        </div>
-        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
-          Usuários Cadastrados
-        </h1>
-        <p class="text-sm text-slate-500 mt-1 max-w-xl">
-          Consulte, gerencie e mantenha atualizados os perfis de acesso ao Sistema de Avaliação CPA.
-        </p>
+        <p class="cpa-kicker">Acesso</p>
+        <h1>Usuarios cadastrados</h1>
+        <p>Gerencie perfis, turmas vinculadas e status dos acessos institucionais.</p>
       </div>
-
-      <div class="flex justify-start md:justify-end">
-        <a href="/users/new"
-           class="inline-flex items-center gap-2 bg-red-700 text-white px-5 py-2.5 rounded-lg
-                  font-medium shadow-sm hover:bg-red-800 transition duration-200 text-sm">
-          <!-- Ícone + usuário -->
-          <svg xmlns="http://www.w3.org/2000/svg"
-               class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="9" cy="8" r="3" />
-            <path d="M4 20a5 5 0 0 1 10 0" />
-            <path d="M17 8v6" />
-            <path d="M20 11h-6" />
-          </svg>
-          <span>Cadastrar Novo Usuário</span>
-        </a>
+      <div class="cpa-actions">
+        <a href="/users/new" class="cpa-button cpa-button-primary">Novo usuario</a>
       </div>
-    </div>
+    </section>
 
-    <div class="overflow-x-auto">
-      <table class="min-w-full border border-slate-200 rounded-lg overflow-hidden shadow-sm text-sm">
-        <thead class="bg-red-50 text-red-800 uppercase text-[11px] font-semibold tracking-wide">
-        <tr>
-          <th class="px-4 py-3 text-left">Usuário</th>
-          <th class="px-4 py-3 text-left">Nome</th>
-          <th class="px-4 py-3 text-left">Função</th>
-          <th class="px-4 py-3 text-left">Turma</th>
-          <th class="px-4 py-3 text-center">Ações</th>
-        </tr>
-        </thead>
-        <tbody class="bg-white">
-        <tr th:each="u : ${users}"
-            class="border-t border-slate-100 hover:bg-slate-50 transition duration-150">
-          <td class="px-4 py-3 text-slate-700" th:text="${u.username}">usuario</td>
-          <td class="px-4 py-3 text-slate-700" th:text="${u.name}">Nome Completo</td>
-          <td class="px-4 py-3 text-slate-700 font-medium" th:text="${u.role}">Papel</td>
-          <td class="px-4 py-3 text-slate-700"
-              th:text="${u.turma != null} ? u.turma.nome : '—'">
-            Turma
-          </td>
-          <td class="px-4 py-3 text-center">
-            <form th:action="@{/users/{username}/delete(username=${u.username})}" method="post"
-                  onsubmit="return confirm('Tem certeza que deseja excluir este usuário?')"
-                  class="inline">
-              <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-              <button type="submit"
-                      class="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5
-                             rounded-lg text-[13px] font-medium transition duration-150">
-                <!-- Ícone lixeira -->
-                <svg xmlns="http://www.w3.org/2000/svg"
-                     class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 6h18" />
-                  <path d="M8 6V4h8v2" />
-                  <path d="M10 11v6" />
-                  <path d="M14 11v6" />
-                  <path d="M5 6l1 14h12l1-14" />
-                </svg>
-                <span>Excluir</span>
-              </button>
-            </form>
-          </td>
-        </tr>
+    <section class="cpa-panel" style="margin-top:18px">
+      <div th:if="${success}" class="cpa-alert cpa-alert-success" th:text="${success}"></div>
+      <div th:if="${error}" class="cpa-alert cpa-alert-danger" th:text="${error}"></div>
 
-        <tr th:if="${#lists.isEmpty(users)}">
-          <td colspan="5" class="text-center text-slate-500 italic py-6">
-            Nenhum usuário cadastrado no momento.
-          </td>
-        </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="text-center mt-8">
-      <a href="/questionnaires"
-         class="inline-flex items-center gap-2 text-red-700 hover:text-red-900 font-medium text-sm transition duration-150">
-        <!-- Ícone seta voltar -->
-        <svg xmlns="http://www.w3.org/2000/svg"
-             class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
-        <span>Voltar aos Questionários</span>
-      </a>
-    </div>
-
-  </div>
-</main>
-
+      <div class="cpa-table-wrap">
+        <table class="cpa-table">
+          <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Nome</th>
+            <th>Perfil</th>
+            <th>Status</th>
+            <th>Turma</th>
+            <th th:if="${superAdmin}">Instituicao</th>
+            <th style="text-align:right">Acoes</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="u : ${users}">
+            <td data-label="Usuario">
+              <strong th:text="${u.username}">usuario</strong>
+              <p class="cpa-help" th:text="${u.email}">email</p>
+            </td>
+            <td data-label="Nome" th:text="${u.name}">Nome</td>
+            <td data-label="Perfil"><span class="cpa-badge cpa-badge-info" th:text="${u.role}">ROLE</span></td>
+            <td data-label="Status">
+              <span class="cpa-badge"
+                    th:classappend="${u.status != null and u.status.name() == 'ATIVO'} ? ' cpa-badge-success' : ' cpa-badge-danger'"
+                    th:text="${u.status}">ATIVO</span>
+              <span th:if="${u.mustChangePassword}" class="cpa-badge cpa-badge-warning" style="margin-left:6px">Troca pendente</span>
+            </td>
+            <td data-label="Turma" th:text="${u.turma != null ? u.turma.nome : '-'}">Turma</td>
+            <td data-label="Instituicao" th:if="${superAdmin}" th:text="${u.instituicao != null ? u.instituicao.nome : '-'}">Instituicao</td>
+            <td data-label="Acoes">
+              <div class="cpa-table-actions">
+                <a th:href="@{/users/{username}/edit(username=${u.username})}" class="cpa-button cpa-button-warning cpa-button-small">Editar</a>
+                <form th:action="@{/users/{username}/delete(username=${u.username})}" method="post"
+                      onsubmit="return confirm('Excluir este usuario?');">
+                  <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+                  <button type="submit" class="cpa-button cpa-button-danger cpa-button-small">Excluir</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(users)}">
+            <td th:colspan="${superAdmin ? 7 : 6}"><div class="cpa-empty">Nenhum usuario cadastrado.</div></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <footer class="cpa-footer"><div class="cpa-footer-inner">Sistema de Avaliacao CPA</div></footer>
+</div>
+<script th:src="@{/js/cpa-ui.js}"></script>
 </body>
 </html>

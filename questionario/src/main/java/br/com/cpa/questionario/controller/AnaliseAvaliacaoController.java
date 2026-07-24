@@ -7,13 +7,19 @@ import br.com.cpa.questionario.repository.ImportanciaItemRespostaRepository;
 import br.com.cpa.questionario.repository.ImportanciaQuestaoRespostaRepository;
 import br.com.cpa.questionario.repository.RespostaAlunoRepository;
 import br.com.cpa.questionario.repository.TurmaRepository;
+import br.com.cpa.questionario.service.AuditService;
 import br.com.cpa.questionario.service.InstituicaoScopeService;
+import br.com.cpa.questionario.service.ResultadoPrivacidadeService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,6 +36,8 @@ public class AnaliseAvaliacaoController {
     private final RespostaAlunoRepository respostaAlunoRepository;
     private final ImportanciaQuestaoRespostaRepository importanciaQuestaoRespostaRepository;
     private final InstituicaoScopeService instituicaoScopeService;
+    private final ResultadoPrivacidadeService resultadoPrivacidadeService;
+    private final AuditService auditService;
 
     public AnaliseAvaliacaoController(TurmaRepository turmaRepository,
                                       AvaliacaoAplicadaRepository avaliacaoAplicadaRepository,
@@ -37,7 +45,9 @@ public class AnaliseAvaliacaoController {
                                       ImportanciaItemRespostaRepository importanciaItemRespostaRepository,
                                       RespostaAlunoRepository respostaAlunoRepository,
                                       ImportanciaQuestaoRespostaRepository importanciaQuestaoRespostaRepository,
-                                      InstituicaoScopeService instituicaoScopeService) {
+                                      InstituicaoScopeService instituicaoScopeService,
+                                      ResultadoPrivacidadeService resultadoPrivacidadeService,
+                                      AuditService auditService) {
         this.turmaRepository = turmaRepository;
         this.avaliacaoAplicadaRepository = avaliacaoAplicadaRepository;
         this.answerRepository = answerRepository;
@@ -45,6 +55,8 @@ public class AnaliseAvaliacaoController {
         this.respostaAlunoRepository = respostaAlunoRepository;
         this.importanciaQuestaoRespostaRepository = importanciaQuestaoRespostaRepository;
         this.instituicaoScopeService = instituicaoScopeService;
+        this.resultadoPrivacidadeService = resultadoPrivacidadeService;
+        this.auditService = auditService;
     }
 
     @GetMapping("/avaliacoes")
@@ -55,38 +67,40 @@ public class AnaliseAvaliacaoController {
                                     @RequestParam(required = false) Long respostaAlunoId,
                                     Model model) {
 
-        List<Turma> turmas = instituicaoScopeService.getInstituicaoAtual()
-                .map(instituicao -> turmaRepository.findByInstituicaoId(instituicao.getId()))
-                .orElseGet(turmaRepository::findAll);
-        List<AvaliacaoAplicada> todasAvaliacoes = instituicaoScopeService.getInstituicaoAtual()
-                .map(instituicao -> avaliacaoAplicadaRepository.findByInstituicaoId(instituicao.getId()))
-                .orElseGet(avaliacaoAplicadaRepository::findAll);
+        List<Turma> turmas = getTurmasPermitidas();
+        List<AvaliacaoAplicada> todasAvaliacoes = getAvaliacoesPermitidas();
 
         Set<Integer> anosSet = todasAvaliacoes.stream()
-                .map(a -> a.getQuestionario().getYear())
+                .map(this::anoQuestionario)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(TreeSet::new));
         List<Integer> anos = new ArrayList<>(anosSet);
 
         List<AvaliacaoAplicada> avaliacoesFiltradas = todasAvaliacoes.stream()
-                .filter(a -> turmaId == null || a.getTurma().getId().equals(turmaId))
-                .filter(a -> ano == null || a.getQuestionario().getYear() == ano)
+                .filter(a -> turmaId == null || turmaId.equals(idTurma(a)))
+                .filter(a -> ano == null || ano.equals(anoQuestionario(a)))
                 .filter(a -> avaliacaoId == null || a.getId().equals(avaliacaoId))
                 .toList();
 
         long qtdAvaliacoesConsideradas = avaliacoesFiltradas.size();
+        List<RespostaAluno> enviosDaAmostra = buscarEnvios(avaliacoesFiltradas);
+        long totalEnvios = enviosDaAmostra.size();
+        boolean resultadosRestritos = !resultadoPrivacidadeService.podeExibirResultadosAgregados(totalEnvios);
 
         // ===========================
         // Respostas (geral)
         // ===========================
         List<Answer> respostas = new ArrayList<>();
-        for (AvaliacaoAplicada av : avaliacoesFiltradas) {
-            List<Answer> respostasAvaliacao =
-                    answerRepository.findByRespostaAlunoAvaliacaoAplicadaId(av.getId());
+        if (!resultadosRestritos) {
+            for (AvaliacaoAplicada av : avaliacoesFiltradas) {
+                List<Answer> respostasAvaliacao =
+                        answerRepository.findByRespostaAlunoAvaliacaoAplicadaId(av.getId());
 
-            if (respostasAvaliacao != null) {
-                respostasAvaliacao.stream()
-                        .filter(a -> a.getRespostaAluno() != null)
-                        .forEach(respostas::add);
+                if (respostasAvaliacao != null) {
+                    respostasAvaliacao.stream()
+                            .filter(a -> a.getRespostaAluno() != null)
+                            .forEach(respostas::add);
+                }
             }
         }
 
@@ -109,6 +123,9 @@ public class AnaliseAvaliacaoController {
 
         for (Answer ans : respostas) {
             Question q = ans.getQuestion();
+            if (q == null) {
+                continue;
+            }
             totalRespostasPergunta.merge(q, 1L, Long::sum);
 
             boolean isQuant = (q.getType() == QuestionType.QUANTITATIVA);
@@ -141,6 +158,7 @@ public class AnaliseAvaliacaoController {
                 }
 
                 if (ans.getRespostaAluno() != null
+                        && resultadoPrivacidadeService.podeExibirRelatorioIndividual()
                         && !ans.getRespostaAluno().isAnonima()
                         && ans.getRespostaAluno().getAluno() != null
                         && q.getItemAvaliacao() != null) {
@@ -193,7 +211,9 @@ public class AnaliseAvaliacaoController {
                     new EnumMap<>(ItemAvaliacao.class);
 
             for (ImportanciaItemResposta imp : importancias) {
-                importanciaPorItem.put(imp.getItem(), imp.getGrauImportancia());
+                if (imp.getItem() != null) {
+                    importanciaPorItem.put(imp.getItem(), imp.getGrauImportancia());
+                }
             }
 
             for (Map.Entry<ItemAvaliacao, List<Integer>> e : porItem.entrySet()) {
@@ -205,19 +225,13 @@ public class AnaliseAvaliacaoController {
                 for (Integer n : notas) soma += n;
                 double media = soma / notas.size();
 
-                int classificacao;
-                if (media < 1.5) classificacao = 1;
-                else if (media < 2.5) classificacao = 2;
-                else if (media < 3.5) classificacao = 3;
-                else classificacao = 4;
-
                 AnaliseItemPorAlunoDTO dto = new AnaliseItemPorAlunoDTO();
                 dto.setAlunoNome(ra.getAluno().getNome());
                 dto.setAlunoRa(ra.getAluno().getRa());
                 dto.setItem(item);
                 dto.setImportanciaAluno(importanciaPorItem.get(item));
                 dto.setMediaNotaItem(media);
-                dto.setClassificacao(classificacao);
+                dto.setClassificacao(resultadoPrivacidadeService.classificarMediaComoNivel(media));
 
                 analisePorAluno.add(dto);
             }
@@ -228,8 +242,8 @@ public class AnaliseAvaliacaoController {
         // =====================================================
         // Lista de "envios" (RespostaAluno) disponíveis de acordo com o filtro de avaliações
         List<RespostaAluno> enviosDisponiveis = new ArrayList<>();
-        for (AvaliacaoAplicada av : avaliacoesFiltradas) {
-            respostaAlunoRepository.findByAvaliacaoAplicadaId(av.getId()).stream()
+        if (resultadoPrivacidadeService.podeExibirRelatorioIndividual() && !resultadosRestritos) {
+            enviosDaAmostra.stream()
                     .filter(envio -> !envio.isAnonima() && envio.getAluno() != null)
                     .forEach(enviosDisponiveis::add);
         }
@@ -239,6 +253,10 @@ public class AnaliseAvaliacaoController {
             if (r.getAluno().getNome() == null) return "";
             return r.getAluno().getNome().toLowerCase(Locale.ROOT);
         }));
+
+        if (!resultadoPrivacidadeService.podeExibirRelatorioIndividual() || resultadosRestritos) {
+            respostaAlunoId = null;
+        }
 
         if (respostaAlunoId != null) {
             Long idSolicitado = respostaAlunoId;
@@ -339,9 +357,16 @@ public class AnaliseAvaliacaoController {
         model.addAttribute("selectedAno", ano);
         model.addAttribute("selectedAvaliacaoId", avaliacaoId);
 
+        model.addAttribute("totalEnvios", totalEnvios);
         model.addAttribute("totalRespostas", totalRespostas);
         model.addAttribute("mediaQuantitativa", mediaQuantitativa);
+        model.addAttribute("classificacaoMedia", resultadoPrivacidadeService.classificarMedia(mediaQuantitativa));
         model.addAttribute("qtdAvaliacoesConsideradas", qtdAvaliacoesConsideradas);
+        model.addAttribute("resultadosRestritos", resultadosRestritos);
+        model.addAttribute("minimoRespostasGrupo", resultadoPrivacidadeService.getMinimoRespostasGrupo());
+        model.addAttribute("mensagemResultadosRestritos",
+                resultadosRestritos ? resultadoPrivacidadeService.mensagemResultadosRestritos(totalEnvios) : null);
+        model.addAttribute("relatorioIndividualPermitido", resultadoPrivacidadeService.podeExibirRelatorioIndividual());
 
         model.addAttribute("distribuicaoPorPergunta", distribuicaoPorPergunta);
         model.addAttribute("totalRespostasPergunta", totalRespostasPergunta);
@@ -361,6 +386,173 @@ public class AnaliseAvaliacaoController {
         model.addAttribute("mediaAlunoComZero", mediaAlunoComZero);
 
         return "analise/avaliacoes";
+    }
+
+    @GetMapping("/avaliacoes/export-resumo")
+    public ResponseEntity<byte[]> exportResumo(@RequestParam(required = false) Long turmaId,
+                                               @RequestParam(required = false) Integer ano,
+                                               @RequestParam(required = false) Long avaliacaoId) {
+        List<AvaliacaoAplicada> avaliacoes = filtrarAvaliacoesPermitidas(turmaId, ano, avaliacaoId);
+        long totalEnvios = buscarEnvios(avaliacoes).size();
+        resultadoPrivacidadeService.validarExportacaoPermitida(totalEnvios);
+
+        long totalRespostas = 0;
+        double somaNotas = 0.0;
+        long totalNotas = 0;
+
+        for (AvaliacaoAplicada avaliacao : avaliacoes) {
+            for (Answer answer : answerRepository.findByRespostaAlunoAvaliacaoAplicadaId(avaliacao.getId())) {
+                totalRespostas++;
+                if (answer.getQuestion() != null
+                        && answer.getQuestion().getType() == QuestionType.QUANTITATIVA) {
+                    Integer nota = tryParseInt(answer.getResponse());
+                    if (nota != null) {
+                        somaNotas += nota;
+                        totalNotas++;
+                    }
+                }
+            }
+        }
+
+        Double media = totalNotas > 0 ? somaNotas / totalNotas : null;
+        StringBuilder csv = new StringBuilder();
+        csv.append("avaliacoes_consideradas;envios_concluidos;respostas;media_quantitativa;classificacao\n");
+        csv.append(avaliacoes.size()).append(";")
+                .append(totalEnvios).append(";")
+                .append(totalRespostas).append(";")
+                .append(media != null ? String.format(Locale.ROOT, "%.2f", media) : "").append(";")
+                .append(csv(resultadoPrivacidadeService.classificarMedia(media))).append("\n");
+
+        auditService.registrar(
+                "EXPORTACAO_RESUMO_AVALIACOES",
+                "RelatorioCPA",
+                avaliacaoId,
+                instituicaoScopeService.getInstituicaoAtual().orElse(null),
+                "totalEnvios=" + totalEnvios + "; avaliacoes=" + avaliacoes.size());
+
+        return csvResponse("analise-resumo.csv", csv.toString());
+    }
+
+    @GetMapping("/avaliacoes/export-perguntas")
+    public ResponseEntity<byte[]> exportPerguntas(@RequestParam(required = false) Long turmaId,
+                                                  @RequestParam(required = false) Integer ano,
+                                                  @RequestParam(required = false) Long avaliacaoId) {
+        List<AvaliacaoAplicada> avaliacoes = filtrarAvaliacoesPermitidas(turmaId, ano, avaliacaoId);
+        long totalEnvios = buscarEnvios(avaliacoes).size();
+        resultadoPrivacidadeService.validarExportacaoPermitida(totalEnvios);
+
+        Map<String, Long> distribuicao = new LinkedHashMap<>();
+        Map<String, String[]> colunas = new LinkedHashMap<>();
+
+        for (AvaliacaoAplicada avaliacao : avaliacoes) {
+            for (Answer answer : answerRepository.findByRespostaAlunoAvaliacaoAplicadaId(avaliacao.getId())) {
+                Question question = answer.getQuestion();
+                if (question == null || question.getType() != QuestionType.QUANTITATIVA) {
+                    continue;
+                }
+                Integer nota = tryParseInt(answer.getResponse());
+                if (nota == null) {
+                    continue;
+                }
+                String key = avaliacao.getId() + "|" + question.getId() + "|" + nota;
+                distribuicao.merge(key, 1L, Long::sum);
+                colunas.putIfAbsent(key, new String[] {
+                        String.valueOf(avaliacao.getId()),
+                        avaliacao.getQuestionario() != null ? avaliacao.getQuestionario().getName() : "",
+                        String.valueOf(question.getId()),
+                        question.getText(),
+                        String.valueOf(nota)
+                });
+            }
+        }
+
+        StringBuilder csv = new StringBuilder();
+        csv.append("avaliacao_id;questionario;pergunta_id;pergunta;nota;quantidade\n");
+        for (Map.Entry<String, Long> entry : distribuicao.entrySet()) {
+            String[] cols = colunas.get(entry.getKey());
+            csv.append(csv(cols[0])).append(";")
+                    .append(csv(cols[1])).append(";")
+                    .append(csv(cols[2])).append(";")
+                    .append(csv(cols[3])).append(";")
+                    .append(csv(cols[4])).append(";")
+                    .append(entry.getValue()).append("\n");
+        }
+
+        auditService.registrar(
+                "EXPORTACAO_DISTRIBUICAO_PERGUNTAS",
+                "RelatorioCPA",
+                avaliacaoId,
+                instituicaoScopeService.getInstituicaoAtual().orElse(null),
+                "totalEnvios=" + totalEnvios + "; linhas=" + distribuicao.size());
+
+        return csvResponse("analise-distribuicao-perguntas.csv", csv.toString());
+    }
+
+    private List<RespostaAluno> buscarEnvios(List<AvaliacaoAplicada> avaliacoes) {
+        List<RespostaAluno> envios = new ArrayList<>();
+        for (AvaliacaoAplicada av : avaliacoes) {
+            envios.addAll(respostaAlunoRepository.findByAvaliacaoAplicadaId(av.getId()));
+        }
+        return envios;
+    }
+
+    private List<AvaliacaoAplicada> filtrarAvaliacoesPermitidas(Long turmaId, Integer ano, Long avaliacaoId) {
+        List<AvaliacaoAplicada> todasAvaliacoes = getAvaliacoesPermitidas();
+
+        return todasAvaliacoes.stream()
+                .filter(a -> turmaId == null || turmaId.equals(idTurma(a)))
+                .filter(a -> ano == null || ano.equals(anoQuestionario(a)))
+                .filter(a -> avaliacaoId == null || a.getId().equals(avaliacaoId))
+                .toList();
+    }
+
+    private List<Turma> getTurmasPermitidas() {
+        if (instituicaoScopeService.isSuperAdmin()) {
+            return turmaRepository.findAll();
+        }
+        return instituicaoScopeService.getInstituicaoAtual()
+                .map(instituicao -> turmaRepository.findByInstituicaoId(instituicao.getId()))
+                .orElseGet(List::of);
+    }
+
+    private List<AvaliacaoAplicada> getAvaliacoesPermitidas() {
+        if (instituicaoScopeService.isSuperAdmin()) {
+            return avaliacaoAplicadaRepository.findAll();
+        }
+        return instituicaoScopeService.getInstituicaoAtual()
+                .map(instituicao -> avaliacaoAplicadaRepository.findByInstituicaoId(instituicao.getId()))
+                .orElseGet(List::of);
+    }
+
+    private Long idTurma(AvaliacaoAplicada avaliacao) {
+        if (avaliacao == null || avaliacao.getTurma() == null) {
+            return null;
+        }
+        return avaliacao.getTurma().getId();
+    }
+
+    private Integer anoQuestionario(AvaliacaoAplicada avaliacao) {
+        if (avaliacao == null || avaliacao.getQuestionario() == null) {
+            return null;
+        }
+        return avaliacao.getQuestionario().getYear();
+    }
+
+    private ResponseEntity<byte[]> csvResponse(String filename, String csv) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .body(csv.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static String csv(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\r", " ")
+                .replace("\n", " ")
+                .replace(";", ",")
+                .trim();
     }
 
     private static Integer tryParseInt(String s) {

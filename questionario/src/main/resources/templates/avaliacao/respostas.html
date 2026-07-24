@@ -1,139 +1,84 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title th:text="'Respostas da Avaliação - ' + ${questionnaire.name}">
-    Respostas da Avaliação
-  </title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title th:text="'Respostas - ' + ${questionnaire.name}">Respostas - Sistema CPA</title>
+  <link rel="stylesheet" th:href="@{/css/cpa-ui.css}" />
 </head>
-<body class="bg-gradient-to-br from-slate-100 to-red-100 min-h-screen flex flex-col font-sans">
+<body class="cpa-body">
+<div class="cpa-page">
+  <div th:replace="~{fragments :: header('avaliacoes', 'Avaliacoes')}"></div>
 
-<header class="bg-red-700 text-white shadow">
-  <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center gap-4">
-    <a href="/home" class="font-semibold tracking-tight text-lg flex items-center gap-3">
-      <span class="inline-flex items-center justify-center h-9 w-9 rounded-md bg-red-800 text-xs font-bold">
-        CPA
-      </span>
-      <div class="flex flex-col leading-tight">
-        <span class="text-sm uppercase tracking-[0.2em] text-red-100">Sistema CPA</span>
-        <span class="text-base">Avaliações</span>
+  <main class="cpa-main">
+    <section class="cpa-hero">
+      <div>
+        <p class="cpa-kicker">Resultados</p>
+        <h1 th:text="'Respostas - ' + ${questionnaire.name}">Respostas da avaliacao</h1>
+        <p>Conferencia das respostas registradas para esta avaliacao aplicada.</p>
       </div>
-    </a>
-
-    <nav class="hidden md:flex items-center gap-5 text-xs font-medium"
-         sec:authorize="hasAnyAuthority('ROLE_ADMIN','ROLE_GESTOR')">
-      <a href="/avaliacoes" class="hover:text-red-100 font-semibold underline underline-offset-4 transition">
-        Avaliações
-      </a>
-      <a href="/questionnaires" class="hover:text-red-100 transition">Questionários</a>
-      <a href="/users" class="hover:text-red-100 transition">Usuários</a>
-      <a href="/turmas" class="hover:text-red-100 transition">Turmas</a>
-      <a href="/analise/avaliacoes" class="hover:text-red-100 transition">Análises</a>
-      <a href="/alunos" class="hover:text-red-100 transition">Alunos</a>
-      <form th:action="@{/logout}" method="post" class="inline">
-        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-        <button type="submit"
-                class="ml-2 px-3 py-1.5 rounded-full bg-red-900 hover:bg-red-800 text-[11px] font-semibold shadow-sm transition">
-          Sair
-        </button>
-      </form>
-    </nav>
-
-    <div class="flex md:hidden items-center gap-2">
-      <a href="/avaliacoes"
-         class="text-xs px-3 py-1.5 rounded-full bg-red-800 hover:bg-red-900 transition">
-        Avaliações
-      </a>
-      <form th:action="@{/logout}" method="post" class="inline" sec:authorize="isAuthenticated()">
-        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-        <button
-          type="submit"
-          class="px-3 py-1.5 rounded-full bg-red-900 hover:bg-red-800 text-[11px] font-semibold shadow-sm transition">
-          Sair
-        </button>
-      </form>
-    </div>
-  </div>
-</header>
-
-<main class="flex-1">
-  <div class="max-w-6xl mx-auto px-4 py-10">
-    <div class="bg-white shadow-xl rounded-2xl p-8 md:p-10 border border-red-100">
-      <h1 class="text-2xl font-bold text-slate-900 mb-2 text-center tracking-tight"
-          th:text="'Respostas - ' + ${questionnaire.name}">
-        Respostas da Avaliação
-      </h1>
-
-      <p class="text-sm text-slate-600 text-center mb-6">
-        Turma:
-        <span class="font-semibold" th:text="${avaliacao.turma.nome}">Nome da turma</span> — 
-        Período:
-        <span th:text="${#temporals.format(avaliacao.dataInicio, 'dd/MM/yyyy HH:mm')}">01/01/2025 08:00</span>
-        até
-        <span th:text="${#temporals.format(avaliacao.dataFim, 'dd/MM/yyyy HH:mm')}">10/01/2025 23:59</span>
-      </p>
-
-      <!-- Caso não haja perguntas -->
-      <div th:if="${#lists.isEmpty(questions)}" class="text-center text-slate-600 py-8 text-sm">
-        <p class="italic">Este questionário não possui perguntas cadastradas.</p>
+      <div class="cpa-actions">
+        <a href="/avaliacoes" class="cpa-button cpa-button-secondary">Voltar</a>
       </div>
+    </section>
 
-      <!-- Loop das questões -->
-      <div th:each="q : ${questions}" class="mb-10">
-        <h2 class="text-lg font-semibold text-slate-700 border-b border-slate-200 pb-2 mb-4"
-            th:text="${q.text}">
-          Texto da questão
-        </h2>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm text-left text-slate-700 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-            <thead class="bg-slate-100 text-slate-800 uppercase text-xs">
-              <tr>
-                <th class="px-4 py-3 font-semibold">Aluno</th>
-                <th class="px-4 py-3 font-semibold">Resposta</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- answersByQuestion[q.id] vem do controller -->
-              <tr th:each="a : ${answersByQuestion[q.id]}"
-                  class="border-t border-slate-100 hover:bg-slate-50 transition">
-                <td class="px-4 py-3" th:text="${a.userUsername}">login do aluno</td>
-                <td class="px-4 py-3 whitespace-pre-line" th:text="${a.response}">Texto da resposta</td>
-              </tr>
-
-              <tr th:if="${#lists.isEmpty(answersByQuestion[q.id])}">
-                <td colspan="2" class="px-4 py-3 italic text-slate-500 text-center">
-                  Nenhuma resposta registrada para esta questão.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+    <section class="cpa-panel" style="margin-top:18px">
+      <div class="cpa-detail-grid">
+        <div class="cpa-detail">
+          <p class="cpa-detail-label">Turma</p>
+          <p class="cpa-detail-value" th:text="${avaliacao.turma != null ? avaliacao.turma.nome : '-'}">Turma</p>
+        </div>
+        <div class="cpa-detail">
+          <p class="cpa-detail-label">Inicio</p>
+          <p class="cpa-detail-value" th:text="${avaliacao.dataInicio != null ? #temporals.format(avaliacao.dataInicio, 'dd/MM/yyyy HH:mm') : '-'}">24/07/2026 08:00</p>
+        </div>
+        <div class="cpa-detail">
+          <p class="cpa-detail-label">Termino</p>
+          <p class="cpa-detail-value" th:text="${avaliacao.dataFim != null ? #temporals.format(avaliacao.dataFim, 'dd/MM/yyyy HH:mm') : '-'}">31/07/2026 23:59</p>
+        </div>
+        <div class="cpa-detail">
+          <p class="cpa-detail-label">Status</p>
+          <p class="cpa-detail-value" th:text="${avaliacao.status}">ABERTA</p>
         </div>
       </div>
+    </section>
 
-      <div class="text-center mt-10">
-        <a href="/avaliacoes"
-           class="inline-flex items-center gap-2 text-red-700 hover:text-red-900 font-medium text-sm">
-          <svg xmlns="http://www.w3.org/2000/svg"
-               class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-          ← Voltar para a lista de avaliações
-        </a>
+    <section class="cpa-panel" style="margin-top:18px">
+      <div th:if="${#lists.isEmpty(questions)}" class="cpa-empty-panel">Este questionario nao possui perguntas cadastradas.</div>
+
+      <div th:if="${!#lists.isEmpty(questions)}" class="cpa-result-list">
+        <article th:each="q, iter : ${questions}" class="cpa-result-item">
+          <p class="cpa-kicker" th:text="'Pergunta ' + ${iter.index + 1}">Pergunta 1</p>
+          <h2 class="cpa-result-title" th:text="${q.text}">Texto da pergunta</h2>
+
+          <div class="cpa-table-wrap">
+            <table class="cpa-table">
+              <thead>
+              <tr>
+                <th>Aluno</th>
+                <th>Resposta</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:each="a : ${answersByQuestion[q.id]}">
+                <td data-label="Aluno" th:text="${a.userUsername != null ? a.userUsername : 'Anonimo'}">aluno</td>
+                <td data-label="Resposta" style="white-space:pre-line" th:text="${a.response}">Resposta</td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(answersByQuestion[q.id])}">
+                <td colspan="2" data-label=""><div class="cpa-empty">Nenhuma resposta registrada para esta pergunta.</div></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
       </div>
-    </div>
-  </div>
-</main>
+    </section>
+  </main>
 
-<footer class="border-t border-slate-200 bg-white">
-  <div class="max-w-6xl mx-auto px-4 py-4 text-center text-xs text-slate-500">
-    © 2025 Sistema de Avaliação CPA
-  </div>
-</footer>
+  <div th:replace="~{fragments :: footer}"></div>
+</div>
+<script th:src="@{/js/cpa-ui.js}"></script>
 </body>
 </html>

@@ -6,10 +6,29 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Editar Questionário</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" th:href="@{/css/cpa-ui.css}" />
 </head>
 
-<body class="bg-gradient-to-br from-slate-100 to-red-100 min-h-screen flex flex-col font-sans">
+<body class="cpa-body">
+<div class="cpa-page">
+  <div th:replace="~{fragments :: header('questionnaires', 'Questionarios')}"></div>
+
+  <main class="cpa-main cpa-main-narrow">
+    <section class="cpa-panel" style="margin-top:42px">
+      <p class="cpa-kicker">Questionarios</p>
+      <h1 class="cpa-panel-title">Edicao centralizada</h1>
+      <p class="cpa-panel-subtitle">A edicao de modelos agora usa o formulario principal do modulo.</p>
+      <div class="cpa-actions" style="margin-top:20px">
+        <a href="/questionnaires" class="cpa-button cpa-button-primary">Ver questionarios</a>
+        <a href="/home" class="cpa-button cpa-button-secondary">Voltar ao painel</a>
+      </div>
+    </section>
+  </main>
+
+  <div th:replace="~{fragments :: footer}"></div>
+</div>
+<script th:src="@{/js/cpa-ui.js}"></script>
+<template hidden aria-hidden="true" th:remove="all">
 
 <!-- Cabeçalho padrão vermelho -->
 <header class="bg-red-700 text-white shadow">
@@ -183,5 +202,6 @@
   </div>
 </footer>
 
+</template>
 </body>
 </html>

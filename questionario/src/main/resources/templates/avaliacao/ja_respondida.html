@@ -6,9 +6,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Avaliação já respondida</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" th:href="@{/css/cpa-ui.css}" />
 </head>
-<body class="bg-gradient-to-br from-slate-100 to-red-100 min-h-screen flex flex-col font-sans">
+<body class="cpa-body">
+<div class="cpa-page">
+  <div th:replace="~{fragments :: header('minhas-avaliacoes', 'Painel do Aluno')}"></div>
+
+  <main class="cpa-main cpa-main-narrow">
+    <section class="cpa-panel" style="margin-top:48px; text-align:center">
+      <div class="cpa-icon-box" style="margin:0 auto 14px">OK</div>
+      <p class="cpa-kicker">Avaliacao</p>
+      <h1 class="cpa-panel-title">Nao foi possivel abrir esta avaliacao</h1>
+      <p class="cpa-panel-subtitle" th:text="${error != null ? error : 'Nosso sistema identificou que esta avaliacao ja foi respondida ou nao esta disponivel para voce.'}">
+        Nosso sistema identificou que esta avaliacao ja foi respondida ou nao esta disponivel para voce.
+      </p>
+      <div class="cpa-actions" style="justify-content:center; margin-top:22px">
+        <a href="/avaliacoes/disponiveis" class="cpa-button cpa-button-primary">Ver minhas avaliacoes</a>
+        <a href="/home" class="cpa-button cpa-button-secondary">Voltar ao painel</a>
+      </div>
+    </section>
+  </main>
+
+  <div th:replace="~{fragments :: footer}"></div>
+</div>
+<script th:src="@{/js/cpa-ui.js}"></script>
+<template hidden aria-hidden="true" th:remove="all">
 
 <header class="bg-red-700 text-white shadow">
   <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center gap-4">
@@ -87,5 +109,6 @@
     © 2025 Sistema de Avaliação CPA
   </div>
 </footer>
+</template>
 </body>
 </html>

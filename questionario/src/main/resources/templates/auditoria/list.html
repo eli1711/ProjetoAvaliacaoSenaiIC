@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Auditoria - Sistema CPA</title>
+  <link rel="stylesheet" th:href="@{/css/cpa-ui.css}" />
+</head>
+<body class="cpa-body">
+<div class="cpa-page">
+  <div th:replace="~{fragments :: header('auditoria', 'Auditoria')}"></div>
+
+  <main class="cpa-main">
+    <section class="cpa-hero">
+      <div>
+        <p class="cpa-kicker">Rastreabilidade</p>
+        <h1>Auditoria</h1>
+        <p>Eventos administrativos recentes, filtrados pelo escopo de acesso do usuario.</p>
+      </div>
+    </section>
+
+    <section class="cpa-panel" style="margin-top:18px">
+      <div class="cpa-table-wrap">
+        <table class="cpa-table">
+          <thead>
+          <tr>
+            <th>Data</th>
+            <th>Usuario</th>
+            <th>Operacao</th>
+            <th>Entidade</th>
+            <th>IP</th>
+            <th>Detalhes</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="log : ${logs}">
+            <td data-label="Data" th:text="${#temporals.format(log.dataHora, 'dd/MM/yyyy HH:mm:ss')}">24/07/2026 10:00:00</td>
+            <td data-label="Usuario" th:text="${log.usuario != null ? log.usuario : '-'}">usuario</td>
+            <td data-label="Operacao"><span class="cpa-badge cpa-badge-info" th:text="${log.operacao}">OPERACAO</span></td>
+            <td data-label="Entidade" th:text="|${log.entidade != null ? log.entidade : '-'} #${log.entidadeId != null ? log.entidadeId : '-'}|">Entidade</td>
+            <td data-label="IP" th:text="${log.ip != null ? log.ip : '-'}">127.0.0.1</td>
+            <td data-label="Detalhes" th:text="${log.detalhes != null ? log.detalhes : '-'}">Detalhes</td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(logs)}">
+            <td colspan="6" data-label=""><div class="cpa-empty">Nenhum evento de auditoria registrado.</div></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div th:replace="~{fragments :: footer}"></div>
+</div>
+<script th:src="@{/js/cpa-ui.js}"></script>
+</body>
+</html>

@@ -6,10 +6,104 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>Nova Questão</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" th:href="@{/css/cpa-ui.css}" />
 </head>
 
-<body class="bg-gradient-to-br from-slate-100 to-red-100 min-h-screen flex flex-col font-sans">
+<body class="cpa-body">
+<div class="cpa-page">
+  <div th:replace="~{fragments :: header('questionnaires', 'Questionarios')}"></div>
+
+  <main class="cpa-main cpa-main-narrow">
+    <section class="cpa-hero">
+      <div>
+        <p class="cpa-kicker">Pergunta</p>
+        <h1>Adicionar pergunta</h1>
+        <p>Configure texto, tipo, item de avaliacao e alternativas do modelo.</p>
+        <p class="cpa-help" th:if="${questionnaire != null}">Questionario: <strong th:text="${questionnaire.name}">Modelo</strong></p>
+      </div>
+    </section>
+
+    <section class="cpa-panel" style="margin-top:18px">
+      <div th:if="${error}" class="cpa-alert cpa-alert-danger" th:text="${error}"></div>
+
+      <form th:action="@{/questionnaires/{id}/questions/new(id=${questionnaire.id})}" method="post" class="cpa-form-grid">
+        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+        <input type="hidden" name="score" value="4" />
+
+        <div class="cpa-field cpa-field-full">
+          <label for="text">Texto da pergunta</label>
+          <input type="text" id="text" name="text" required class="cpa-input" placeholder="Ex.: O conteudo da disciplina foi bem organizado?" />
+        </div>
+
+        <div class="cpa-field" style="grid-column: span 2">
+          <label for="type">Tipo</label>
+          <select id="type" name="type" required class="cpa-select" data-question-type>
+            <option value="QUALITATIVA">Qualitativa (resposta aberta)</option>
+            <option value="QUANTITATIVA" selected>Quantitativa (multipla escolha)</option>
+          </select>
+        </div>
+
+        <div class="cpa-field" style="grid-column: span 2">
+          <label for="item">Item de avaliacao</label>
+          <select id="item" name="item" required class="cpa-select">
+            <option value="">Selecione...</option>
+            <option th:each="i : ${itensAvaliacao}" th:value="${i}" th:text="${i.descricao}">Item</option>
+          </select>
+        </div>
+
+        <div class="cpa-form-section" data-quant-fields>
+          <h2 class="cpa-form-section-title">Alternativas quantitativas</h2>
+          <div class="cpa-form-grid">
+            <div class="cpa-field" style="grid-column: span 2">
+              <label for="option1Label">Alternativa 1 (25%)</label>
+              <input type="text" id="option1Label" name="option1Label" value="Discordo totalmente" class="cpa-input" />
+            </div>
+            <div class="cpa-field" style="grid-column: span 2">
+              <label for="option2Label">Alternativa 2 (50%)</label>
+              <input type="text" id="option2Label" name="option2Label" value="Discordo parcialmente" class="cpa-input" />
+            </div>
+            <div class="cpa-field" style="grid-column: span 2">
+              <label for="option3Label">Alternativa 3 (75%)</label>
+              <input type="text" id="option3Label" name="option3Label" value="Concordo parcialmente" class="cpa-input" />
+            </div>
+            <div class="cpa-field" style="grid-column: span 2">
+              <label for="option4Label">Alternativa 4 (100%)</label>
+              <input type="text" id="option4Label" name="option4Label" value="Concordo totalmente" class="cpa-input" />
+            </div>
+            <div class="cpa-field cpa-field-full">
+              <label for="option5Label">Alternativa 5 opcional (0%)</label>
+              <input type="text" id="option5Label" name="option5Label" placeholder="Ex.: Nao sei opinar" class="cpa-input" />
+              <p class="cpa-help">Se ficar em branco, essa opcao nao sera exibida ao aluno.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="cpa-actions cpa-field-full" style="justify-content:flex-end; padding-top:8px">
+          <a th:href="@{/questionnaires/{id}(id=${questionnaire.id})}" class="cpa-button cpa-button-secondary">Cancelar</a>
+          <button type="submit" class="cpa-button cpa-button-primary">Salvar pergunta</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <div th:replace="~{fragments :: footer}"></div>
+</div>
+<script th:src="@{/js/cpa-ui.js}"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var typeSelect = document.querySelector("[data-question-type]");
+    var quantFields = document.querySelector("[data-quant-fields]");
+    if (!typeSelect || !quantFields) return;
+
+    function toggleQuantFields() {
+      quantFields.hidden = typeSelect.value !== "QUANTITATIVA";
+    }
+
+    typeSelect.addEventListener("change", toggleQuantFields);
+    toggleQuantFields();
+  });
+</script>
+<template hidden aria-hidden="true" th:remove="all">
 
 <header class="bg-red-700 text-white shadow">
   <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center gap-4">
@@ -286,5 +380,6 @@
   });
 </script>
 
+</template>
 </body>
 </html>

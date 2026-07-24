@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<header th:fragment="header(active, sectionTitle)" class="cpa-header">
+  <div class="cpa-header-inner">
+    <a th:href="@{/home}" class="cpa-brand">
+      <span class="cpa-brand-mark">CPA</span>
+      <span>
+        <span class="cpa-brand-kicker">Sistema CPA</span>
+        <span class="cpa-brand-title" th:text="${sectionTitle}">Painel</span>
+      </span>
+    </a>
+
+    <button class="cpa-menu-button"
+            type="button"
+            aria-label="Abrir menu"
+            aria-expanded="false"
+            data-cpa-menu-button="main-nav">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <nav id="main-nav" class="cpa-nav" aria-label="Navegacao principal">
+      <a th:href="@{/dev}"
+         class="cpa-nav-link"
+         th:classappend="${active == 'dev'} ? ' is-active' : ''"
+         sec:authorize="hasAuthority('ROLE_SUPER_ADMIN')">Dev</a>
+      <a th:href="@{/home}"
+         class="cpa-nav-link"
+         th:classappend="${active == 'home'} ? ' is-active' : ''">Inicio</a>
+      <a th:href="@{/avaliacoes}"
+         class="cpa-nav-link"
+         th:classappend="${active == 'avaliacoes'} ? ' is-active' : ''"
+         sec:authorize="hasAnyAuthority('ROLE_SUPER_ADMIN','PUBLICAR_AVALIACAO','VISUALIZAR_RESULTADOS')">Avaliacoes</a>
+      <a th:href="@{/questionnaires}"
+         class="cpa-nav-link"
+         th:classappend="${active == 'questionnaires'} ? ' is-active' : ''"
+         sec:authorize="hasAnyAuthority('ROLE_SUPER_ADMIN','CRIAR_QUESTIONARIO','EDITAR_QUESTIONARIO')">Questionarios</a>
+      <a th:href="@{/users}"
+         class="cpa-nav-link"
+         th:classappend="${active == 'users'} ? ' is-active' : ''"
+         sec:authorize="hasAnyAuthority('ROLE_SUPER_ADMIN','GERENCIAR_USUARIOS')">Usuarios</a>
+      <a th:href="@{/turmas}"
+         class="cpa-nav-link"
+         th:classappend="${active == 'turmas'} ? ' is-active' : ''"
+         sec:authorize="hasAnyAuthority('ROLE_SUPER_ADMIN','GERENCIAR_TURMAS_CURSOS')">Turmas</a>
+      <a th:href="@{/alunos}"
+         class="cpa-nav-link"
+         th:classappend="${active == 'alunos'} ? ' is-active' : ''"
+         sec:authorize="hasAnyAuthority('ROLE_SUPER_ADMIN','GERENCIAR_TURMAS_CURSOS')">Alunos</a>
+      <a th:href="@{/analise/avaliacoes}"
+         class="cpa-nav-link"
+         th:classappend="${active == 'analises'} ? ' is-active' : ''"
+         sec:authorize="hasAnyAuthority('ROLE_SUPER_ADMIN','VISUALIZAR_RESULTADOS')">Analises</a>
+      <a th:href="@{/planos-acao}"
+         class="cpa-nav-link"
+         th:classappend="${active == 'planos'} ? ' is-active' : ''"
+         sec:authorize="hasAnyAuthority('ROLE_SUPER_ADMIN','GERENCIAR_PLANOS_ACAO')">Planos</a>
+      <a th:href="@{/auditoria}"
+         class="cpa-nav-link"
+         th:classappend="${active == 'auditoria'} ? ' is-active' : ''"
+         sec:authorize="hasAnyAuthority('ROLE_SUPER_ADMIN','GERENCIAR_USUARIOS')">Auditoria</a>
+      <a th:href="@{/avaliacoes/disponiveis}"
+         class="cpa-nav-link"
+         th:classappend="${active == 'minhas-avaliacoes'} ? ' is-active' : ''"
+         sec:authorize="hasAuthority('RESPONDER_AVALIACAO')">Minhas avaliacoes</a>
+      <form th:action="@{/logout}" method="post" class="cpa-logout-form" sec:authorize="isAuthenticated()">
+        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+        <button type="submit" class="cpa-button cpa-button-secondary cpa-button-small">Sair</button>
+      </form>
+    </nav>
+  </div>
+</header>
+
+<footer th:fragment="footer" class="cpa-footer">
+  <div class="cpa-footer-inner">Sistema de Avaliacao CPA</div>
+</footer>
+</body>
+</html>

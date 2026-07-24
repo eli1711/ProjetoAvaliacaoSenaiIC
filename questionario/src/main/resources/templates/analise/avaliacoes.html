@@ -1,403 +1,234 @@
 <!DOCTYPE html>
-<html lang="pt" xmlns:th="http://www.thymeleaf.org">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Análise das Avaliações - CPA</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Analise das avaliacoes - Sistema CPA</title>
+  <link rel="stylesheet" th:href="@{/css/cpa-ui.css}" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
-<body class="bg-gradient-to-br from-slate-100 to-red-100 min-h-screen flex flex-col font-sans">
-
-<header class="bg-red-700 text-white shadow">
-  <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center gap-4">
-    <a href="/home" class="font-semibold tracking-tight text-lg flex items-center gap-3">
-      <span class="inline-flex items-center justify-center h-9 w-9 rounded-md bg-red-800 text-xs font-bold">
-        CPA
-      </span>
-      <div class="flex flex-col leading-tight">
-        <span class="text-sm uppercase tracking-[0.2em] text-red-100">Sistema CPA</span>
-        <span class="text-base">Análise de Avaliações</span>
-      </div>
-    </a>
-
-    <nav class="hidden md:flex items-center gap-5 text-xs font-medium">
-      <a href="/home" class="hover:text-red-100 transition">Início</a>
-      <a href="/avaliacoes" class="hover:text-red-100 transition">Avaliações</a>
-      <a href="/questionnaires" class="hover:text-red-100 transition">Questionários</a>
-      <a href="/turmas" class="hover:text-red-100 transition">Turmas</a>
-      <a href="/analise/avaliacoes" class="hover:text-red-100 font-semibold underline underline-offset-4 transition">
-        Análises
+<body class="cpa-body">
+<div class="cpa-page">
+  <header class="cpa-header">
+    <div class="cpa-header-inner">
+      <a href="/home" class="cpa-brand">
+        <span class="cpa-brand-mark">CPA</span>
+        <span>
+          <span class="cpa-brand-kicker">Sistema CPA</span>
+          <span class="cpa-brand-title">Analise de resultados</span>
+        </span>
       </a>
-      <form th:action="@{/logout}" method="post" class="inline">
-        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-        <button type="submit"
-                class="ml-2 px-3 py-1.5 rounded-full bg-red-900 hover:bg-red-800 text-[11px] font-semibold shadow-sm transition">
-          Sair
-        </button>
-      </form>
-    </nav>
-
-    <div class="flex md:hidden items-center gap-2">
-      <a href="/analise/avaliacoes"
-         class="text-xs px-3 py-1.5 rounded-full bg-red-800 hover:bg-red-900 transition">
-        Análises
-      </a>
-      <form th:action="@{/logout}" method="post" class="inline">
-        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
-        <button
-          type="submit"
-          class="px-3 py-1.5 rounded-full bg-red-900 hover:bg-red-800 text-[11px] font-semibold shadow-sm transition">
-          Sair
-        </button>
-      </form>
+      <button class="cpa-menu-button" type="button" aria-label="Abrir menu" aria-expanded="false" data-cpa-menu-button="main-nav">
+        <span></span><span></span><span></span>
+      </button>
+      <nav id="main-nav" class="cpa-nav" aria-label="Navegacao principal">
+        <a href="/home" class="cpa-nav-link">Inicio</a>
+        <a href="/avaliacoes" class="cpa-nav-link">Avaliacoes</a>
+        <a href="/questionnaires" class="cpa-nav-link">Questionarios</a>
+        <a href="/analise/avaliacoes" class="cpa-nav-link is-active">Analises</a>
+        <a href="/planos-acao" class="cpa-nav-link">Planos</a>
+        <form th:action="@{/logout}" method="post" class="cpa-logout-form">
+          <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+          <button type="submit" class="cpa-button cpa-button-secondary cpa-button-small">Sair</button>
+        </form>
+      </nav>
     </div>
-  </div>
-</header>
+  </header>
 
-<main class="flex-1">
-  <div class="max-w-6xl mx-auto px-4 py-8">
-
-    <div class="flex items-center justify-between mb-6">
+  <main class="cpa-main">
+    <section class="cpa-hero">
       <div>
-        <div class="inline-flex items-center gap-2 rounded-full bg-red-50 text-red-700 px-3 py-1 mb-2">
-          <span class="inline-block h-2 w-2 rounded-full bg-red-600"></span>
-          <span class="text-[11px] font-semibold tracking-wide uppercase">
-            Painel de análise
-          </span>
-        </div>
-        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
-          Análise das Avaliações
-        </h1>
+        <p class="cpa-kicker">Resultados</p>
+        <h1>Analise das avaliacoes</h1>
+        <p>Visualize indicadores consolidados, distribuicao por pergunta e respostas abertas respeitando a regra de privacidade.</p>
       </div>
-      <a href="/home"
-         class="text-sm px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 inline-flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg"
-             class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
-        Voltar ao início
-      </a>
+      <a href="/home" class="cpa-button cpa-button-secondary">Painel</a>
+    </section>
+
+    <section class="cpa-panel" style="margin-top:18px">
+      <form method="get" class="cpa-form-grid">
+        <div class="cpa-field">
+          <label for="turmaId">Turma</label>
+          <select id="turmaId" name="turmaId" class="cpa-select">
+            <option value="" th:selected="${selectedTurmaId} == null">Todas</option>
+            <option th:each="t : ${turmas}"
+                    th:value="${t.id}"
+                    th:text="${t.nome + ' - ' + t.curso + ' (' + t.ano + '/' + t.semestre + ')'}"
+                    th:selected="${selectedTurmaId} != null and selectedTurmaId == t.id">
+            </option>
+          </select>
+        </div>
+
+        <div class="cpa-field">
+          <label for="ano">Ano</label>
+          <select id="ano" name="ano" class="cpa-select">
+            <option value="" th:selected="${selectedAno} == null">Todos</option>
+            <option th:each="a : ${anos}" th:value="${a}" th:text="${a}" th:selected="${selectedAno} != null and selectedAno == a"></option>
+          </select>
+        </div>
+
+        <div class="cpa-field" style="grid-column:span 2">
+          <label for="avaliacaoId">Avaliacao</label>
+          <select id="avaliacaoId" name="avaliacaoId" class="cpa-select">
+            <option value="" th:selected="${selectedAvaliacaoId} == null">Todas</option>
+            <option th:each="av : ${avaliacoes}"
+                    th:value="${av.id}"
+                    th:selected="${selectedAvaliacaoId != null and selectedAvaliacaoId == av.id}"
+                    th:text="|ID ${av.id} - ${av.turma != null ? av.turma.nome : 'sem turma'} - ${av.questionario != null ? av.questionario.name : 'sem questionario'} (${av.questionario != null ? av.questionario.year : '-'})|">
+            </option>
+          </select>
+        </div>
+
+        <div class="cpa-actions cpa-field-full" style="justify-content:space-between">
+          <div class="cpa-actions">
+            <button type="submit" class="cpa-button cpa-button-primary">Aplicar filtros</button>
+            <a href="/analise/avaliacoes" class="cpa-button cpa-button-secondary">Limpar</a>
+          </div>
+          <div class="cpa-actions">
+            <a th:href="@{/analise/avaliacoes/export-resumo(turmaId=${selectedTurmaId},ano=${selectedAno},avaliacaoId=${selectedAvaliacaoId})}"
+               th:if="${!resultadosRestritos}"
+               class="cpa-button cpa-button-secondary">Exportar resumo</a>
+            <a th:href="@{/analise/avaliacoes/export-perguntas(turmaId=${selectedTurmaId},ano=${selectedAno},avaliacaoId=${selectedAvaliacaoId})}"
+               th:if="${!resultadosRestritos}"
+               class="cpa-button cpa-button-secondary">Exportar distribuicao</a>
+            <span th:if="${resultadosRestritos}" class="cpa-badge cpa-badge-warning">Exportacao bloqueada</span>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <div th:if="${resultadosRestritos}" class="cpa-alert cpa-alert-warning" style="margin-top:18px">
+      <strong>Amostra protegida.</strong>
+      <span th:text="${mensagemResultadosRestritos}">Resultados ocultados para proteger os participantes.</span>
     </div>
 
-    <form method="get"
-          class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4 bg-white border border-red-100 rounded-2xl p-4 shadow-sm">
-
-      <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Turma</label>
-        <select name="turmaId"
-                class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none bg-white">
-          <option value="" th:selected="${selectedTurmaId} == null">Todas</option>
-          <option th:each="t : ${turmas}"
-                  th:value="${t.id}"
-                  th:text="${t.nome + ' - ' + t.curso + ' (' + t.ano + '/' + t.semestre + ')'}"
-                  th:selected="${selectedTurmaId} != null and selectedTurmaId == t.id">
-          </option>
-        </select>
+    <section class="cpa-grid cpa-grid-4" style="margin-top:18px">
+      <div class="cpa-card cpa-stat">
+        <p class="cpa-stat-label">Avaliacoes</p>
+        <p class="cpa-stat-value" th:text="${qtdAvaliacoesConsideradas}">0</p>
       </div>
-
-      <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Ano</label>
-        <select name="ano"
-                class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none bg-white">
-          <option value="" th:selected="${selectedAno} == null">Todos</option>
-          <option th:each="a : ${anos}"
-                  th:value="${a}"
-                  th:text="${a}"
-                  th:selected="${selectedAno} != null and selectedAno == a">
-          </option>
-        </select>
+      <div class="cpa-card cpa-stat">
+        <p class="cpa-stat-label">Envios concluidos</p>
+        <p class="cpa-stat-value" th:text="${totalEnvios}">0</p>
+        <p class="cpa-stat-note" th:text="|Minimo para exibir: ${minimoRespostasGrupo}|">Minimo: 5</p>
       </div>
-
-      <div class="md:col-span-2">
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Avaliação aplicada</label>
-        <select name="avaliacaoId"
-                class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none bg-white">
-          <option value="" th:selected="${selectedAvaliacaoId} == null">Todas</option>
-          <option th:each="av : ${avaliacoes}"
-                  th:value="${av.id}"
-                  th:selected="${selectedAvaliacaoId != null and selectedAvaliacaoId == av.id}"
-                  th:text="|[ID ${av.id}] ${av.turma.nome} - ${av.questionario.name} (${av.questionario.year})|">
-          </option>
-        </select>
+      <div class="cpa-card cpa-stat">
+        <p class="cpa-stat-label">Total de respostas</p>
+        <p class="cpa-stat-value" th:text="${totalRespostas}">0</p>
       </div>
+      <div class="cpa-card cpa-stat">
+        <p class="cpa-stat-label">Media global</p>
+        <p class="cpa-stat-value" style="color:var(--cpa-primary)" th:text="${mediaQuantitativa == null ? '-' : #numbers.formatDecimal(mediaQuantitativa, 1, 2)}">-</p>
+        <p class="cpa-stat-note" th:text="${classificacaoMedia}">Sem dados</p>
+      </div>
+    </section>
 
-      <div class="md:col-span-4 flex flex-wrap justify-between items-center gap-2 mt-2">
-        <div class="flex flex-wrap gap-2">
-          <a href="/analise/avaliacoes"
-             class="px-4 py-2 text-sm rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100">
-            Limpar filtros
-          </a>
-          <button type="submit"
-                  class="px-5 py-2 text-sm rounded-lg bg-red-700 text-white font-medium hover:bg-red-800 shadow-sm inline-flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg"
-                 class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 4h18" />
-              <path d="M6 8h12" />
-              <path d="M9 12h6" />
-            </svg>
-            Aplicar filtros
-          </button>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <a th:href="@{/analise/avaliacoes/export-resumo(
-                          turmaId=${selectedTurmaId},
-                          ano=${selectedAno},
-                          avaliacaoId=${selectedAvaliacaoId})}"
-             class="px-4 py-2 text-xs md:text-sm rounded-lg border border-emerald-500 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 inline-flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg"
-                 class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 14l3 3 3-3" />
-              <path d="M12 4v13" />
-              <path d="M5 19h14" />
-            </svg>
-            Exportar resumo (CSV)
-          </a>
-
-          <a th:href="@{/analise/avaliacoes/export-perguntas(
-                          turmaId=${selectedTurmaId},
-                          ano=${selectedAno},
-                          avaliacaoId=${selectedAvaliacaoId})}"
-             class="px-4 py-2 text-xs md:text-sm rounded-lg border border-blue-500 text-blue-700 bg-blue-50 hover:bg-blue-100 inline-flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg"
-                 class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 3h18v4H3z" />
-              <path d="M3 11h18v4H3z" />
-              <path d="M3 19h18v2H3z" />
-            </svg>
-            Exportar distribuição (CSV)
-          </a>
+    <section class="cpa-panel" style="margin-top:18px" th:if="${relatorioIndividualPermitido and !resultadosRestritos}">
+      <div class="cpa-panel-header">
+        <div>
+          <h2 class="cpa-panel-title">Relatorio por aluno</h2>
+          <p class="cpa-panel-subtitle">Disponivel apenas quando a politica de privacidade permitir.</p>
         </div>
       </div>
-    </form>
 
-    <!-- ===================================================== -->
-    <!-- RELATÓRIO POR ALUNO (IMPORTÂNCIA + RESPOSTA)           -->
-    <!-- ===================================================== -->
-    <div class="bg-white rounded-2xl border border-red-100 p-5 shadow-sm mb-8">
-      <h2 class="text-lg font-semibold text-slate-900 mb-3">
-        Relatório por aluno (importância + resposta)
-      </h2>
-
-      <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <input type="hidden" name="turmaId" th:value="${selectedTurmaId}">
-        <input type="hidden" name="ano" th:value="${selectedAno}">
-        <input type="hidden" name="avaliacaoId" th:value="${selectedAvaliacaoId}">
-
-        <div class="md:col-span-3">
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Aluno (resposta enviada)</label>
-          <select name="respostaAlunoId"
-                  class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none bg-white">
-            <option value="" th:selected="${selectedRespostaAlunoId} == null">Selecione...</option>
+      <form method="get" class="cpa-form-grid">
+        <input type="hidden" name="turmaId" th:value="${selectedTurmaId}" />
+        <input type="hidden" name="ano" th:value="${selectedAno}" />
+        <input type="hidden" name="avaliacaoId" th:value="${selectedAvaliacaoId}" />
+        <div class="cpa-field" style="grid-column:span 3">
+          <label for="respostaAlunoId">Aluno</label>
+          <select id="respostaAlunoId" name="respostaAlunoId" class="cpa-select">
+            <option value="" th:selected="${selectedRespostaAlunoId} == null">Selecione</option>
             <option th:each="ra : ${enviosDisponiveis}"
                     th:value="${ra.id}"
                     th:selected="${selectedRespostaAlunoId != null and selectedRespostaAlunoId == ra.id}"
-                    th:text="|${ra.aluno.ra} - ${ra.aluno.nome}  (Aval: ${ra.avaliacaoAplicada.id})|">
+                    th:text="|${ra.aluno.ra} - ${ra.aluno.nome} (Aval: ${ra.avaliacaoAplicada.id})|">
             </option>
           </select>
-          <p class="text-[11px] text-slate-400 mt-1">
-            O filtro lista alunos que responderam as avaliações dentro dos filtros acima.
-          </p>
         </div>
-
-        <div class="md:col-span-1 flex items-end gap-2">
-          <button type="submit"
-                  class="w-full px-5 py-2 text-sm rounded-lg bg-red-700 text-white font-medium hover:bg-red-800 shadow-sm">
-            Ver aluno
-          </button>
+        <div class="cpa-actions" style="align-items:end">
+          <button type="submit" class="cpa-button cpa-button-primary">Ver aluno</button>
         </div>
       </form>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5" th:if="${selectedRespostaAlunoId != null}">
-        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
-          <p class="text-xs font-semibold text-slate-500 mb-1">Média do aluno (somente notas 1..4)</p>
-          <p class="text-2xl font-bold text-red-700"
-             th:text="${mediaAluno == null ? '-' : #numbers.formatDecimal(mediaAluno, 1, 2)}">-</p>
+      <div class="cpa-grid cpa-grid-2" style="margin-top:16px" th:if="${selectedRespostaAlunoId != null}">
+        <div class="cpa-card cpa-stat">
+          <p class="cpa-stat-label">Media sem opcao 0</p>
+          <p class="cpa-stat-value" th:text="${mediaAluno == null ? '-' : #numbers.formatDecimal(mediaAluno, 1, 2)}">-</p>
         </div>
-
-        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
-          <p class="text-xs font-semibold text-slate-500 mb-1">Média do aluno (incluindo 0 se marcou opção 5)</p>
-          <p class="text-2xl font-bold text-slate-900"
-             th:text="${mediaAlunoComZero == null ? '-' : #numbers.formatDecimal(mediaAlunoComZero, 1, 2)}">-</p>
+        <div class="cpa-card cpa-stat">
+          <p class="cpa-stat-label">Media com opcao 0</p>
+          <p class="cpa-stat-value" th:text="${mediaAlunoComZero == null ? '-' : #numbers.formatDecimal(mediaAlunoComZero, 1, 2)}">-</p>
         </div>
       </div>
 
-      <div class="mt-5" th:if="${selectedRespostaAlunoId != null}">
-        <div th:if="${#lists.isEmpty(relatorioAluno)}" class="text-sm text-slate-600">
-          Nenhuma resposta encontrada para este aluno.
-        </div>
+      <div class="cpa-table-wrap" style="margin-top:16px" th:if="${selectedRespostaAlunoId != null and !#lists.isEmpty(relatorioAluno)}">
+        <table class="cpa-table">
+          <thead>
+          <tr>
+            <th>Item</th>
+            <th>Pergunta</th>
+            <th>Tipo</th>
+            <th>Importancia</th>
+            <th>Resposta</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="r : ${relatorioAluno}">
+            <td data-label="Item" th:text="${r.item != null ? (r.item.descricao != null ? r.item.descricao : r.item) : '-'}">-</td>
+            <td data-label="Pergunta" th:text="${r.perguntaTexto != null ? r.perguntaTexto : '-'}">Pergunta</td>
+            <td data-label="Tipo"><span class="cpa-badge" th:text="${r.tipo != null ? r.tipo : '-'}">Tipo</span></td>
+            <td data-label="Importancia" th:text="${r.importancia != null ? r.importancia : '-'}">-</td>
+            <td data-label="Resposta" th:text="${r.resposta != null ? r.resposta : '-'}">-</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-        <div th:unless="${#lists.isEmpty(relatorioAluno)}" class="overflow-x-auto">
-          <table class="min-w-full text-xs border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-            <thead class="bg-slate-50">
-            <tr>
-              <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Item</th>
-              <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Pergunta</th>
-              <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Tipo</th>
-              <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Importância</th>
-              <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Resposta</th>
-            </tr>
-            </thead>
+    <section class="cpa-panel" style="margin-top:18px" th:unless="${relatorioIndividualPermitido}">
+      <h2 class="cpa-panel-title">Relatorio individual desativado</h2>
+      <p class="cpa-panel-subtitle">A visualizacao por aluno fica bloqueada por padrao para preservar anonimato.</p>
+    </section>
 
-            <tbody>
-            <tr th:each="r : ${relatorioAluno}" class="border-b border-slate-100 hover:bg-slate-50">
-              <!-- Item (blindado) -->
-              <td class="px-3 py-2"
-                  th:text="${r.item != null ? (r.item.descricao != null ? r.item.descricao : r.item) : '-'}">-</td>
-
-              <!-- Pergunta (já vem pronta no DTO) -->
-              <td class="px-3 py-2" th:text="${r.perguntaTexto != null ? r.perguntaTexto : '-'}">Pergunta</td>
-
-              <!-- Tipo -->
-              <td class="px-3 py-2" th:text="${r.tipo != null ? r.tipo : '-'}">QUANTITATIVA</td>
-
-              <!-- ✅ IMPORTÂNCIA -->
-<td class="px-3 py-2 align-top">
-  <div th:if="${#strings.toString(r.tipo) == 'QUANTITATIVA'}" class="space-y-1">
-
-    <label class="flex items-center gap-2 text-slate-800">
-      <input type="checkbox" disabled class="h-4 w-4 accent-red-600"
-             th:checked="${r.importanciaValor != null and r.importanciaValor == 1}" />
-      <span class="text-xs"><span class="font-semibold">1</span> <span class="text-slate-600">—</span> Baixa</span>
-    </label>
-
-    <label class="flex items-center gap-2 text-slate-800">
-      <input type="checkbox" disabled class="h-4 w-4 accent-red-600"
-             th:checked="${r.importanciaValor != null and r.importanciaValor == 2}" />
-      <span class="text-xs"><span class="font-semibold">2</span> <span class="text-slate-600">—</span> Média</span>
-    </label>
-
-    <label class="flex items-center gap-2 text-slate-800">
-      <input type="checkbox" disabled class="h-4 w-4 accent-red-600"
-             th:checked="${r.importanciaValor != null and r.importanciaValor == 3}" />
-      <span class="text-xs"><span class="font-semibold">3</span> <span class="text-slate-600">—</span> Alta</span>
-    </label>
-
-  
-
-  </div>
-
-  <div th:if="${#strings.toString(r.tipo) == 'QUALITATIVA'}" class="text-slate-400 text-xs">-</div>
-</td>
-
-              <!-- ✅ RESPOSTA (checklist preenchido) -->
-              <td class="px-3 py-2 align-top">
-                <div th:if="${#strings.toString(r.tipo) == 'QUANTITATIVA'}" class="space-y-1">
-                  <label class="flex items-center gap-2 text-slate-800">
-                    <input type="checkbox" disabled class="h-4 w-4 accent-red-600"
-                           th:checked="${#strings.toString(r.respostaNumero) == '1'}"/>
-                    <span class="text-xs"><span class="font-semibold">1</span> <span class="text-slate-600">—</span> <span th:text="${r.option1Label != null ? r.option1Label : '-'}">Opção 1</span></span>
-                  </label>
-
-                  <label class="flex items-center gap-2 text-slate-800">
-                    <input type="checkbox" disabled class="h-4 w-4 accent-red-600"
-                           th:checked="${#strings.toString(r.respostaNumero) == '2'}"/>
-                    <span class="text-xs"><span class="font-semibold">2</span> <span class="text-slate-600">—</span> <span th:text="${r.option2Label != null ? r.option2Label : '-'}">Opção 2</span></span>
-                  </label>
-
-                  <label class="flex items-center gap-2 text-slate-800">
-                    <input type="checkbox" disabled class="h-4 w-4 accent-red-600"
-                           th:checked="${#strings.toString(r.respostaNumero) == '3'}"/>
-                    <span class="text-xs"><span class="font-semibold">3</span> <span class="text-slate-600">—</span> <span th:text="${r.option3Label != null ? r.option3Label : '-'}">Opção 3</span></span>
-                  </label>
-
-                  <label class="flex items-center gap-2 text-slate-800">
-                    <input type="checkbox" disabled class="h-4 w-4 accent-red-600"
-                           th:checked="${#strings.toString(r.respostaNumero) == '4'}"/>
-                    <span class="text-xs"><span class="font-semibold">4</span> <span class="text-slate-600">—</span> <span th:text="${r.option4Label != null ? r.option4Label : '-'}">Opção 4</span></span>
-                  </label>
-
-                  <label class="flex items-center gap-2 text-slate-800">
-                    <input type="checkbox" disabled class="h-4 w-4 accent-red-600"
-                           th:checked="${#strings.toString(r.respostaNumero) == '0'}"/>
-                    <span class="text-xs"><span class="font-semibold">0</span> <span class="text-slate-600">—</span> <span th:text="${r.option5Label != null ? r.option5Label : 'N/A'}">N/A</span></span>
-                  </label>
-                </div>
-
-                <div th:if="${#strings.toString(r.tipo) == 'QUALITATIVA'}"
-                     class="text-slate-700 text-xs"
-                     th:text="${r.resposta != null ? r.resposta : '-'}">
-                  texto...
-                </div>
-              </td>
-            </tr>
-            </tbody>
-          </table>
+    <section class="cpa-panel" style="margin-top:18px">
+      <div class="cpa-panel-header">
+        <div>
+          <h2 class="cpa-panel-title">Distribuicao por pergunta</h2>
+          <p class="cpa-panel-subtitle">Questoes quantitativas dentro dos filtros selecionados.</p>
         </div>
       </div>
-    </div>
 
-    <!-- CARDS RESUMO -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-      <div class="bg-white rounded-2xl border border-red-100 p-4 shadow-sm">
-        <p class="text-xs font-semibold text-slate-500 mb-1">Avaliações consideradas</p>
-        <p class="text-2xl font-bold text-slate-900" th:text="${qtdAvaliacoesConsideradas}">0</p>
+      <div th:if="${#maps.isEmpty(distribuicaoPorPergunta)}" class="cpa-empty">
+        Nenhuma questao quantitativa encontrada.
       </div>
 
-      <div class="bg-white rounded-2xl border border-red-100 p-4 shadow-sm">
-        <p class="text-xs font-semibold text-slate-500 mb-1">Total de respostas</p>
-        <p class="text-2xl font-bold text-slate-900" th:text="${totalRespostas}">0</p>
-      </div>
-
-      <div class="bg-white rounded-2xl border border-red-100 p-4 shadow-sm">
-        <p class="text-xs font-semibold text-slate-500 mb-1">Média global (questões quantitativas)</p>
-        <p class="text-2xl font-bold text-red-700"
-           th:text="${mediaQuantitativa == null ? '-' : #numbers.formatDecimal(mediaQuantitativa, 1, 2)}">-</p>
-      </div>
-    </div>
-
-    <div class="space-y-4 mb-10">
-      <h2 class="text-lg font-semibold text-slate-900 mb-2">
-        Distribuição por pergunta (quantitativas)
-      </h2>
-
-      <div th:if="${#maps.isEmpty(distribuicaoPorPergunta)}"
-           class="bg-white border border-dashed border-slate-300 rounded-2xl p-6 text-sm text-slate-600">
-        Nenhuma questão quantitativa encontrada para os filtros selecionados.
-      </div>
-
-      <div th:each="entry : ${distribuicaoPorPergunta}"
-           class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"
-           data-chart-block>
-
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
+      <div th:each="entry : ${distribuicaoPorPergunta}" class="cpa-card" style="min-height:auto;margin-bottom:14px" data-chart-block>
+        <div class="cpa-card-head">
           <div>
-            <p class="text-sm font-semibold text-slate-900" th:text="${entry.key.text}">Texto da pergunta</p>
-            <p class="text-xs text-slate-500 mt-1"
-               th:text="|Questionário: ${entry.key.questionnaire.name} (${entry.key.questionnaire.year})|">
-              Questionário
-            </p>
+            <h3 th:text="${entry.key.text}">Pergunta</h3>
+            <p th:text="|Questionario: ${entry.key.questionnaire != null ? entry.key.questionnaire.name : 'sem questionario'} (${entry.key.questionnaire != null ? entry.key.questionnaire.year : '-'})|">Questionario</p>
           </div>
-          <div class="text-right">
-            <p class="text-xs text-slate-500">Total de respostas</p>
-            <p class="text-base font-semibold text-slate-900"
-               th:text="${totalRespostasPergunta[entry.key] != null ? totalRespostasPergunta[entry.key] : 0}">0</p>
-            <p class="text-xs text-slate-500 mt-1">Média</p>
-            <p class="text-base font-semibold text-red-700"
-               th:text="${mediaPergunta[entry.key] == null ? '-' : #numbers.formatDecimal(mediaPergunta[entry.key], 1, 2)}">-</p>
+          <div>
+            <span class="cpa-badge" th:text="|Total: ${totalRespostasPergunta[entry.key] != null ? totalRespostasPergunta[entry.key] : 0}|">Total</span>
+            <span class="cpa-badge cpa-badge-info" th:text="|Media: ${mediaPergunta[entry.key] == null ? '-' : #numbers.formatDecimal(mediaPergunta[entry.key], 1, 2)}|">Media</span>
           </div>
         </div>
 
-        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-          <div class="overflow-x-auto" data-chart-table>
-            <table class="min-w-full text-xs border border-slate-200 rounded-lg overflow-hidden">
-              <thead class="bg-slate-50">
+        <div class="cpa-grid cpa-grid-2">
+          <div class="cpa-table-wrap" data-chart-table>
+            <table class="cpa-table" style="min-width:0">
+              <thead>
               <tr>
-                <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Nota</th>
-                <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Alternativa</th>
-                <th class="px-3 py-2 border-b border-slate-200 text-left font-semibold text-slate-600">Qtd. respostas</th>
+                <th>Nota</th>
+                <th>Alternativa</th>
+                <th>Qtd.</th>
               </tr>
               </thead>
               <tbody>
               <tr th:each="notaEntry : ${entry.value}">
-                <td class="px-3 py-2 border-b border-slate-100" th:text="${notaEntry.key}">0</td>
-                <td class="px-3 py-2 border-b border-slate-100"
+                <td data-label="Nota" th:text="${notaEntry.key}">0</td>
+                <td data-label="Alternativa"
                     th:text="${
                       notaEntry.key == 1 ? entry.key.option1Label :
                       (notaEntry.key == 2 ? entry.key.option2Label :
@@ -405,79 +236,56 @@
                       (notaEntry.key == 4 ? entry.key.option4Label :
                       (notaEntry.key == 0 ? entry.key.option5Label : '-'))))
                     }">Alternativa</td>
-                <td class="px-3 py-2 border-b border-slate-100" th:text="${notaEntry.value}">0</td>
+                <td data-label="Qtd." th:text="${notaEntry.value}">0</td>
               </tr>
               </tbody>
             </table>
           </div>
-
-          <div class="flex items-center justify-center">
-            <div class="w-24 sm:w-32 aspect-square">
-              <canvas class="w-full h-full" data-chart-canvas></canvas>
-            </div>
+          <div class="cpa-chart-box">
+            <canvas data-chart-canvas aria-label="Grafico de distribuicao de respostas"></canvas>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="space-y-4 mb-8">
-      <h2 class="text-lg font-semibold text-slate-900 mb-2">
-        Respostas qualitativas (texto dos alunos)
-      </h2>
-
-      <div th:if="${#maps.isEmpty(respostasQualitativasPorPergunta)}"
-           class="bg-white border border-dashed border-slate-300 rounded-2xl p-6 text-sm text-slate-600">
-        Nenhuma resposta qualitativa encontrada para os filtros selecionados.
+    <section class="cpa-panel" style="margin-top:18px">
+      <div class="cpa-panel-header">
+        <div>
+          <h2 class="cpa-panel-title">Respostas qualitativas</h2>
+          <p class="cpa-panel-subtitle">Comentarios abertos dos participantes.</p>
+        </div>
       </div>
 
-      <div th:each="entry : ${respostasQualitativasPorPergunta}"
-           class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-        <p class="text-sm font-semibold text-slate-900 mb-2" th:text="${entry.key.text}">
-          Texto da pergunta qualitativa
-        </p>
+      <div th:if="${#maps.isEmpty(respostasQualitativasPorPergunta)}" class="cpa-empty">
+        Nenhuma resposta qualitativa encontrada.
+      </div>
 
-        <ul class="space-y-2 max-h-64 overflow-y-auto pr-2">
-          <li th:each="resp : ${entry.value}"
-              class="text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-            <span th:text="${resp}">Resposta do aluno</span>
-          </li>
+      <article th:each="entry : ${respostasQualitativasPorPergunta}" class="cpa-card" style="min-height:auto;margin-bottom:12px">
+        <h3 th:text="${entry.key.text}">Pergunta qualitativa</h3>
+        <ul style="margin:12px 0 0;padding:0;display:grid;gap:8px;list-style:none;max-height:260px;overflow:auto">
+          <li th:each="resp : ${entry.value}" class="cpa-alert" style="margin:0" th:text="${resp}">Resposta</li>
         </ul>
-      </div>
-    </div>
+      </article>
+    </section>
+  </main>
 
-  </div>
-</main>
-
-<footer class="border-t border-slate-200 bg-white mt-8">
-  <div class="max-w-6xl mx-auto px-4 py-4 text-center text-xs text-slate-500">
-    © 2025 Sistema de Avaliação CPA — Módulo de Análise
-  </div>
-</footer>
-
+  <footer class="cpa-footer"><div class="cpa-footer-inner">Sistema de Avaliacao CPA</div></footer>
+</div>
+<script th:src="@{/js/cpa-ui.js}"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    const blocks = document.querySelectorAll("[data-chart-block]");
+    document.querySelectorAll("[data-chart-block]").forEach(function (block) {
+      var table = block.querySelector("[data-chart-table] table");
+      var canvas = block.querySelector("[data-chart-canvas]");
+      if (!table || !canvas || typeof Chart === "undefined") return;
 
-    blocks.forEach(function (block) {
-      const tableWrapper = block.querySelector("[data-chart-table]");
-      const canvas = block.querySelector("[data-chart-canvas]");
-      if (!tableWrapper || !canvas) return;
-
-      const table = tableWrapper.querySelector("table");
-      if (!table) return;
-
-      const rows = table.querySelectorAll("tbody tr");
-      const labels = [];
-      const data = [];
-
-      rows.forEach(function (row) {
-        const cells = row.querySelectorAll("td");
+      var labels = [];
+      var data = [];
+      table.querySelectorAll("tbody tr").forEach(function (row) {
+        var cells = row.querySelectorAll("td");
         if (cells.length < 3) return;
-
-        const nota = cells[0].innerText.trim();
-        const qtdText = cells[2].innerText.trim();
-        const qtd = parseInt(qtdText, 10);
-
+        var nota = cells[0].innerText.trim();
+        var qtd = parseInt(cells[2].innerText.trim(), 10);
         if (!isNaN(qtd) && qtd > 0) {
           labels.push("Nota " + nota);
           data.push(qtd);
@@ -487,27 +295,25 @@
       if (!data.length) return;
 
       new Chart(canvas.getContext("2d"), {
-        type: "pie",
+        type: "doughnut",
         data: {
           labels: labels,
           datasets: [{
             data: data,
-            backgroundColor: ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6"],
+            backgroundColor: ["#b4232a", "#b7791f", "#0f6f8f", "#18794e", "#6d5bd0"],
             borderColor: "#ffffff",
-            borderWidth: 1
+            borderWidth: 2
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: "bottom", labels: { font: { size: 11 } } },
+            legend: { position: "bottom" },
             tooltip: {
               callbacks: {
                 label: function (context) {
-                  const label = context.label || "";
-                  const value = context.parsed || 0;
-                  return `${label}: ${value} resposta(s)`;
+                  return (context.label || "") + ": " + (context.parsed || 0) + " resposta(s)";
                 }
               }
             }
@@ -517,6 +323,5 @@
     });
   });
 </script>
-
 </body>
 </html>

@@ -1,11 +1,16 @@
 package br.com.cpa.questionario.controller;
 
+import br.com.cpa.questionario.exception.PasswordPolicyException;
 import br.com.cpa.questionario.model.*;
 import br.com.cpa.questionario.repository.AlunoRepository;
+import br.com.cpa.questionario.repository.InstituicaoRepository;
 import br.com.cpa.questionario.repository.TurmaRepository;
 import br.com.cpa.questionario.repository.UserRepository;
 import br.com.cpa.questionario.service.InstituicaoScopeService;
+import br.com.cpa.questionario.service.PasswordPolicyService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,28 +23,38 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Controller
 @RequestMapping("/users")
 public class UserController {
 
+    private static final Logger log = LoggerFactory.getLogger(UserController.class);
+    private static final String ROLE_SUPER_ADMIN = "ROLE_SUPER_ADMIN";
+
     private final UserRepository userRepository;
+    private final InstituicaoRepository instituicaoRepository;
     private final TurmaRepository turmaRepository;
     private final PasswordEncoder passwordEncoder;
     private final AlunoRepository alunoRepository;
     private final InstituicaoScopeService instituicaoScopeService;
+    private final PasswordPolicyService passwordPolicyService;
 
     public UserController(UserRepository userRepository,
+                          InstituicaoRepository instituicaoRepository,
                           TurmaRepository turmaRepository,
                           PasswordEncoder passwordEncoder,
                           AlunoRepository alunoRepository,
-                          InstituicaoScopeService instituicaoScopeService) {
+                          InstituicaoScopeService instituicaoScopeService,
+                          PasswordPolicyService passwordPolicyService) {
         this.userRepository = userRepository;
+        this.instituicaoRepository = instituicaoRepository;
         this.turmaRepository = turmaRepository;
         this.passwordEncoder = passwordEncoder;
         this.alunoRepository = alunoRepository;
         this.instituicaoScopeService = instituicaoScopeService;
+        this.passwordPolicyService = passwordPolicyService;
     }
 
     // ========== CADASTRO PÚBLICO DE ALUNO ==========
@@ -52,7 +67,10 @@ public class UserController {
 
         model.addAttribute("user", user);
         model.addAttribute("turmas", turmaRepository.findAll());
+        model.addAttribute("instituicoes", List.of());
+        model.addAttribute("superAdmin", false);
         model.addAttribute("cadastroAluno", true);
+        model.addAttribute("passwordRules", passwordPolicyService.resumoRegras());
 
         return "user/edit"; // reutilizando o mesmo formulário
     }
@@ -69,7 +87,15 @@ public class UserController {
         }
 
         if (user.getPassword() == null || user.getPassword().isBlank()) {
-            redirectAttributes.addFlashAttribute("error", "Senha (CPF) é obrigatória.");
+            redirectAttributes.addFlashAttribute("error", "Senha e obrigatoria.");
+            return "redirect:/users/aluno/registro";
+        }
+
+        user.setRa(user.getUsername());
+        try {
+            passwordPolicyService.validar(user.getPassword(), user);
+        } catch (PasswordPolicyException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
             return "redirect:/users/aluno/registro";
         }
 
@@ -92,11 +118,10 @@ public class UserController {
         user.setStatus(StatusAluno.ATIVO);
         user.setRole("ROLE_ALUNO");
 
-        // senha = CPF criptografado
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-        // RA espelhado no campo ra
-        user.setRa(user.getUsername());
+        user.setPasswordChangedAt(LocalDateTime.now());
+        user.setMustChangePassword(false);
+        user.resetLoginFailures();
 
         userRepository.save(user);
 
@@ -104,7 +129,7 @@ public class UserController {
         Aluno aluno = new Aluno();
         aluno.setNome(user.getName());
         aluno.setRa(user.getUsername());
-        aluno.setCpf("********"); // se quiser guardar CPF real, passe antes da criptografia
+        aluno.setCpf("********");
         aluno.setEmail(user.getEmail());
         aluno.setUser(user);
         aluno.setTurma(user.getTurma());
@@ -120,10 +145,8 @@ public class UserController {
 
     @GetMapping
     public String list(Model model) {
-        List<User> users = instituicaoScopeService.getInstituicaoAtual()
-                .map(instituicao -> userRepository.findByInstituicaoId(instituicao.getId()))
-                .orElseGet(userRepository::findAll);
-        model.addAttribute("users", users);
+        model.addAttribute("users", getUsuariosPermitidos());
+        model.addAttribute("superAdmin", instituicaoScopeService.isSuperAdmin());
         return "user/list";
     }
 
@@ -134,9 +157,7 @@ public class UserController {
         User user = new User();
         user.setStatus(StatusAluno.ATIVO);
 
-        model.addAttribute("user", user);
-        model.addAttribute("turmas", getTurmasPermitidas());
-        model.addAttribute("cadastroAluno", false);
+        adicionarAtributosFormularioUsuario(model, user, false);
         return "user/edit";
     }
 
@@ -149,9 +170,8 @@ public class UserController {
             return "redirect:/users";
         }
         instituicaoScopeService.validarAcesso(user.getInstituicao());
-        model.addAttribute("user", user);
-        model.addAttribute("turmas", getTurmasPermitidas());
-        model.addAttribute("cadastroAluno", false);
+        user.setPassword(null);
+        adicionarAtributosFormularioUsuario(model, user, false);
         return "user/edit";
     }
 
@@ -160,36 +180,88 @@ public class UserController {
     @PostMapping("/save")
     public String saveUser(@ModelAttribute("user") User user,
                            @RequestParam(value = "turmaId", required = false) Long turmaId,
+                           @RequestParam(value = "instituicaoId", required = false) Long instituicaoId,
                            RedirectAttributes redirectAttributes) {
+
+        User existing = userRepository.findByUsername(user.getUsername());
+        String redirectErro = existing == null
+                ? "redirect:/users/new"
+                : "redirect:/users/" + user.getUsername() + "/edit";
+        boolean superAdmin = instituicaoScopeService.isSuperAdmin();
+
+        if (existing != null) {
+            instituicaoScopeService.validarAcesso(existing.getInstituicao());
+        }
+        if (!superAdmin && ROLE_SUPER_ADMIN.equals(user.getRole())) {
+            redirectAttributes.addFlashAttribute("error", "Somente o dev pode cadastrar usuario super admin.");
+            return redirectErro;
+        }
+
+        Instituicao instituicaoSelecionada = null;
+        if (superAdmin && instituicaoId != null) {
+            instituicaoSelecionada = instituicaoRepository.findById(instituicaoId)
+                    .orElseThrow(() -> new IllegalArgumentException("Instituicao nao encontrada"));
+        }
 
         if (turmaId != null) {
             Turma turma = turmaRepository.findById(turmaId).orElse(null);
             if (turma != null) {
                 instituicaoScopeService.validarAcesso(turma.getInstituicao());
             }
+            if (superAdmin && instituicaoSelecionada != null && turma != null
+                    && !mesmaInstituicao(instituicaoSelecionada, turma.getInstituicao())) {
+                redirectAttributes.addFlashAttribute("error", "A turma selecionada pertence a outra instituicao.");
+                return redirectErro;
+            }
             user.setTurma(turma);
-            user.setInstituicao(turma != null
-                    ? turma.getInstituicao()
-                    : instituicaoScopeService.instituicaoParaNovoRegistro(user.getInstituicao()));
+            user.setInstituicao(turma != null ? turma.getInstituicao() : instituicaoSelecionada);
         } else {
             user.setTurma(null);
-            user.setInstituicao(instituicaoScopeService.instituicaoParaNovoRegistro(user.getInstituicao()));
+            user.setInstituicao(superAdmin
+                    ? instituicaoSelecionada
+                    : instituicaoScopeService.instituicaoParaNovoRegistro(null));
         }
 
-        User existing = userRepository.findByUsername(user.getUsername());
-        if (existing != null) {
-            instituicaoScopeService.validarAcesso(existing.getInstituicao());
-            if (user.getInstituicao() == null) {
-                user.setInstituicao(existing.getInstituicao());
-            }
+        if (ROLE_SUPER_ADMIN.equals(user.getRole())) {
+            user.setTurma(null);
+            user.setInstituicao(null);
+        } else if (user.getInstituicao() == null) {
+            redirectAttributes.addFlashAttribute("error", "Selecione uma instituicao para este usuario.");
+            return redirectErro;
         }
+
+        String senhaInformada = user.getPassword();
+        boolean alterarSenha = senhaInformada != null && !senhaInformada.isBlank();
         if (existing == null) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            if (!alterarSenha) {
+                redirectAttributes.addFlashAttribute("error", "Informe uma senha inicial para o usuario.");
+                return redirectErro;
+            }
+            try {
+                passwordPolicyService.validar(senhaInformada, user);
+            } catch (PasswordPolicyException ex) {
+                redirectAttributes.addFlashAttribute("error", ex.getMessage());
+                return redirectErro;
+            }
+            user.setPassword(passwordEncoder.encode(senhaInformada));
+            user.setMustChangePassword(true);
+            user.setPasswordChangedAt(LocalDateTime.now());
+            user.resetLoginFailures();
         } else {
-            if (user.getPassword() == null || user.getPassword().isBlank()) {
+            if (!alterarSenha) {
                 user.setPassword(existing.getPassword());
+                copiarControlesDeSeguranca(existing, user);
             } else {
-                user.setPassword(passwordEncoder.encode(user.getPassword()));
+                try {
+                    passwordPolicyService.validar(senhaInformada, user);
+                } catch (PasswordPolicyException ex) {
+                    redirectAttributes.addFlashAttribute("error", ex.getMessage());
+                    return redirectErro;
+                }
+                user.setPassword(passwordEncoder.encode(senhaInformada));
+                user.setMustChangePassword(true);
+                user.setPasswordChangedAt(LocalDateTime.now());
+                user.resetLoginFailures();
             }
         }
 
@@ -232,7 +304,7 @@ public class UserController {
     }
 
     // ========= IMPORTAR CSV DE ALUNOS =========
-    // Formato: Nome;RA;CPF
+    // Formato: Nome;RA;CPF. Login = RA, senha inicial = CPF.
     @PostMapping("/alunos/import")
     public String importAlunosCsv(@RequestParam("file") MultipartFile file,
                                   RedirectAttributes redirectAttributes) {
@@ -243,6 +315,7 @@ public class UserController {
         }
 
         int criados = 0;
+        int atualizados = 0;
         int ignorados = 0;
         int linhaAtual = 0;
 
@@ -262,15 +335,15 @@ public class UserController {
                     continue;
                 }
 
-                String[] cols = line.split(";", -1);
+                String[] cols = separarColunasCsv(line);
                 if (cols.length < 3) {
                     ignorados++;
                     continue;
                 }
 
-                String nome = cols[0].trim();
-                String ra   = cols[1].trim();
-                String cpf  = cols[2].trim();
+                String nome = limparValorCsv(cols[0]);
+                String ra = limparValorCsv(cols[1]);
+                String cpf = passwordPolicyService.gerarSenhaInicialAluno(ra, cols[2]);
 
                 if (ra.isEmpty() || cpf.isEmpty()) {
                     ignorados++;
@@ -279,8 +352,16 @@ public class UserController {
 
                 String username = ra; // login = RA
 
-                if (userRepository.existsById(username)) {
-                    ignorados++;
+                User userExistente = userRepository.findByUsername(username);
+                if (userExistente == null) {
+                    userExistente = userRepository.findByRa(ra);
+                }
+                if (userExistente != null) {
+                    if (atualizarSenhaTemporariaAluno(userExistente, cpf)) {
+                        atualizados++;
+                    } else {
+                        ignorados++;
+                    }
                     continue;
                 }
 
@@ -295,8 +376,10 @@ public class UserController {
                 user.setRa(ra);
                 user.setInstituicao(instituicaoScopeService.instituicaoParaNovoRegistro(null));
 
-                // senha = CPF
                 user.setPassword(passwordEncoder.encode(cpf));
+                user.setMustChangePassword(true);
+                user.setPasswordChangedAt(LocalDateTime.now());
+                user.resetLoginFailures();
 
                 userRepository.save(user);
 
@@ -316,20 +399,90 @@ public class UserController {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn("Erro ao processar importacao de usuarios por CSV", e);
             redirectAttributes.addFlashAttribute("error",
                     "Erro ao processar CSV: " + e.getMessage());
             return "redirect:/users";
         }
 
         redirectAttributes.addFlashAttribute("success",
-                "Importação concluída. Criados: " + criados + ", ignorados: " + ignorados + ".");
+                "Importacao concluida. Criados: " + criados
+                        + ", atualizados: " + atualizados
+                        + ", ignorados: " + ignorados + ".");
         return "redirect:/users";
     }
 
+    private void adicionarAtributosFormularioUsuario(Model model, User user, boolean cadastroAluno) {
+        boolean superAdmin = instituicaoScopeService.isSuperAdmin();
+        model.addAttribute("user", user);
+        model.addAttribute("turmas", getTurmasPermitidas());
+        model.addAttribute("instituicoes", superAdmin ? instituicaoRepository.findAll() : List.of());
+        model.addAttribute("superAdmin", superAdmin);
+        model.addAttribute("cadastroAluno", cadastroAluno);
+        model.addAttribute("passwordRules", passwordPolicyService.resumoRegras());
+    }
+
+    private List<User> getUsuariosPermitidos() {
+        if (instituicaoScopeService.isSuperAdmin()) {
+            return userRepository.findAll();
+        }
+        return instituicaoScopeService.getInstituicaoAtual()
+                .map(instituicao -> userRepository.findByInstituicaoId(instituicao.getId()))
+                .orElseGet(List::of);
+    }
+
     private List<Turma> getTurmasPermitidas() {
+        if (instituicaoScopeService.isSuperAdmin()) {
+            return turmaRepository.findAll();
+        }
         return instituicaoScopeService.getInstituicaoAtual()
                 .map(instituicao -> turmaRepository.findByInstituicaoId(instituicao.getId()))
-                .orElseGet(turmaRepository::findAll);
+                .orElseGet(List::of);
+    }
+
+    private boolean mesmaInstituicao(Instituicao a, Instituicao b) {
+        if (a == null || b == null || a.getId() == null || b.getId() == null) {
+            return a == b;
+        }
+        return a.getId().equals(b.getId());
+    }
+
+    private void copiarControlesDeSeguranca(User origem, User destino) {
+        destino.setFailedLoginAttempts(origem.getFailedLoginAttempts());
+        destino.setLockedUntil(origem.getLockedUntil());
+        destino.setPasswordChangedAt(origem.getPasswordChangedAt());
+        destino.setMustChangePassword(origem.isMustChangePassword());
+    }
+
+    private String[] separarColunasCsv(String line) {
+        String[] cols = line.split(";", -1);
+        if (cols.length >= 3) {
+            return cols;
+        }
+        return line.split(",", -1);
+    }
+
+    private String limparValorCsv(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\uFEFF", "").trim();
+    }
+
+    private boolean atualizarSenhaTemporariaAluno(User user, String cpf) {
+        if (user == null || !ehAluno(user) || !user.isMustChangePassword()) {
+            return false;
+        }
+        instituicaoScopeService.validarAcesso(user.getInstituicao());
+        user.setPassword(passwordEncoder.encode(cpf));
+        user.setPasswordChangedAt(LocalDateTime.now());
+        user.setMustChangePassword(true);
+        user.resetLoginFailures();
+        userRepository.save(user);
+        return true;
+    }
+
+    private boolean ehAluno(User user) {
+        return "ROLE_ALUNO".equals(user.getRole());
     }
 }
